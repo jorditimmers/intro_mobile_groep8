@@ -1,5 +1,6 @@
 import 'package:easypark_app/strings.dart';
 import 'package:flutter/material.dart';
+import '../headerbar/headerbar.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key, required this.title}) : super(key: key);
@@ -14,14 +15,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _buildTitle(),
-          ],
-        ),
-      ),
+      appBar: headerBar(),
     );
   }
 
