@@ -2,6 +2,8 @@ import 'package:easypark_app/ui/home/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:easypark_app/strings.dart' as strings;
 
+import '../strings.dart';
+
 class EasyParkApp extends StatelessWidget {
   const EasyParkApp({super.key});
 
@@ -9,9 +11,11 @@ class EasyParkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EasyPark',
+      debugShowCheckedModeBanner: false,
+      title: title,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        useMaterial3: true,
       ),
       home: HomePage(title: strings.title),
     );
