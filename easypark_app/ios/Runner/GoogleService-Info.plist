@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>495269148336-8k1bjlrf8r72fs7uo79decnk00qnpbua.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.495269148336-8k1bjlrf8r72fs7uo79decnk00qnpbua</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBaBc-ErZ8ihnKWyg395Jk2f4WtSvgHV8Q</string>
+	<key>GCM_SENDER_ID</key>
+	<string>495269148336</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.easyparkApp</string>
+	<key>PROJECT_ID</key>
+	<string>easypark-app-groep8-70ab2</string>
+	<key>STORAGE_BUCKET</key>
+	<string>easypark-app-groep8-70ab2.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:495269148336:ios:b0b234cbc236f09289ad75</string>
+</dict>
+</plist>
