@@ -29,6 +29,13 @@
             {
               "client_id": "495269148336-ss2va9jrqkh2t2fpl5g2scee2mgms0ha.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "495269148336-8k1bjlrf8r72fs7uo79decnk00qnpbua.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.easyparkApp"
+              }
             }
           ]
         }
