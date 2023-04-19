@@ -1,3 +1,4 @@
+import 'package:easypark_app/ui/headerbar/headerbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 
@@ -20,6 +21,7 @@ class MapPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         home: Scaffold(
+      appBar: headerBar(),
       body: OSMFlutter(
         controller: mapController,
         trackMyPosition: false,
