@@ -18,7 +18,6 @@ class _HomePageState extends State<HomePage> {
     final ButtonStyle style =
         ElevatedButton.styleFrom(textStyle: const TextStyle(fontSize: 20));
     return Scaffold(
-<<<<<<< HEAD
         appBar: headerBar(),
         body: Center(
           child: Column(
@@ -62,34 +61,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ]),
         ));
-=======
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _buildTitle(),
-            ElevatedButton(
-              style: style,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => MapPage(),
-                  ),
-                );
-              },
-              child: const Text('Map'),
-            ), // Map Button
-            const SizedBox(height: 30),
-            ElevatedButton(
-              style: style,
-              onPressed: () {},
-              child: const Text('Indicate Departure'),
-            ), //Departure button
-          ],
-        ),
-      ),
-    );
->>>>>>> 6c62ae247ff753e3f0e353bf4a24809135d0d8f9
   }
 
   Widget _buildTitle() => Text(
