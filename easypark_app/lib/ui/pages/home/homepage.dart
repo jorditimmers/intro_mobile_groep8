@@ -1,6 +1,7 @@
 import 'package:easypark_app/strings.dart';
 import 'package:flutter/material.dart';
-import '../headerbar/headerbar.dart';
+
+import '../../elements/headerbar.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key, required this.title}) : super(key: key);
@@ -18,11 +19,4 @@ class _HomePageState extends State<HomePage> {
       appBar: headerBar(),
     );
   }
-
-  Widget _buildTitle() => Text(
-        title,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-            fontSize: 30, fontWeight: FontWeight.bold, color: Colors.blue),
-      );
 }
