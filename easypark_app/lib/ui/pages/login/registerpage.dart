@@ -1,19 +1,16 @@
-import 'package:easypark_app/ui/elements/headerbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 
-class loginPage extends StatefulWidget {
-  const loginPage({super.key});
+class registerPage extends StatefulWidget {
+  const registerPage({super.key});
 
   @override
-  State<loginPage> createState() => _loginPageState();
+  State<registerPage> createState() => _registerPageState();
 }
 
-class _loginPageState extends State<loginPage> {
-  bool isRememberMe = false;
-
+class _registerPageState extends State<registerPage> {
   Widget buildEmail() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,6 +42,44 @@ class _loginPageState extends State<loginPage> {
                 contentPadding: EdgeInsets.only(top: 14),
                 prefixIcon: Icon(Icons.email, color: Colors.blue),
                 hintText: 'E-Mail',
+                hintStyle: TextStyle(color: Colors.black38)),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget buildUsername() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Username',
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'SF_Pro'),
+        ),
+        SizedBox(height: 10),
+        Container(
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
+              ]),
+          height: 60,
+          child: TextField(
+            obscureText: true,
+            style: TextStyle(color: Colors.black87),
+            decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.only(top: 14),
+                prefixIcon: Icon(Icons.person, color: Colors.blue),
+                hintText: 'Username',
                 hintStyle: TextStyle(color: Colors.black38)),
           ),
         )
@@ -90,7 +125,45 @@ class _loginPageState extends State<loginPage> {
     );
   }
 
-  Widget buildLoginButton() {
+  Widget buildRepeatPassword() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Repeat Password',
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'SF_Pro'),
+        ),
+        SizedBox(height: 10),
+        Container(
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
+              ]),
+          height: 60,
+          child: TextField(
+            obscureText: true,
+            style: TextStyle(color: Colors.black87),
+            decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.only(top: 14),
+                prefixIcon: Icon(Icons.lock, color: Colors.blue),
+                hintText: 'Repeat Password',
+                hintStyle: TextStyle(color: Colors.black38)),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget buildRegisterButton() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 25),
       width: double.infinity,
@@ -101,66 +174,15 @@ class _loginPageState extends State<loginPage> {
             shape: MaterialStateProperty.all(RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15))),
             padding: MaterialStateProperty.all(EdgeInsets.all(25))),
-        onPressed: () => print('Login Pressed'),
+        onPressed: () => print('Register Pressed'),
         child: (Text(
-          'LOGIN',
+          'CREATE ACCOUNT',
           style: (TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
               fontFamily: 'SF_Pro')),
         )),
-      ),
-    );
-  }
-
-  Widget buildRememberCb() {
-    return Container(
-      height: 20,
-      child: Row(children: <Widget>[
-        Theme(
-            data: ThemeData(unselectedWidgetColor: Colors.white),
-            child: Checkbox(
-              value: isRememberMe,
-              checkColor: Colors.blue,
-              activeColor: Colors.white,
-              onChanged: (value) {
-                setState(() {
-                  isRememberMe = value!;
-                });
-              },
-            )),
-        Text(
-          'Remember me',
-          style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'SF_Pro'),
-        ),
-      ]),
-    );
-  }
-
-  Widget buildSignUpBtn() {
-    return GestureDetector(
-      onTap: () => print("Sign Up Pressed"),
-      child: RichText(
-        text: TextSpan(children: [
-          TextSpan(
-              text: 'Don\'t have an Account? ',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'SF_Pro')),
-          TextSpan(
-              text: 'Sign Up',
-              style: TextStyle(
-                  color: Colors.black26,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'SF_Pro'))
-        ]),
       ),
     );
   }
@@ -200,13 +222,15 @@ class _loginPageState extends State<loginPage> {
                               fontSize: 80,
                               color: Colors.white)),
                       SizedBox(height: 50),
+                      buildUsername(),
+                      SizedBox(height: 10),
                       buildEmail(),
-                      SizedBox(height: 20),
+                      SizedBox(height: 10),
                       buildPassword(),
                       SizedBox(height: 10),
-                      buildRememberCb(),
-                      buildLoginButton(),
-                      buildSignUpBtn()
+                      buildRepeatPassword(),
+                      SizedBox(height: 10),
+                      buildRegisterButton()
                     ],
                   ),
                 ),
