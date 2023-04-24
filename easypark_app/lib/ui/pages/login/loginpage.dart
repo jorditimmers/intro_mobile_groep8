@@ -1,8 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
+import 'package:easypark_app/ui/pages/login/registerpage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
+
+import '../../../model/user.dart';
 
 class loginPage extends StatefulWidget {
   const loginPage({super.key});
@@ -13,6 +17,31 @@ class loginPage extends StatefulWidget {
 
 class _loginPageState extends State<loginPage> {
   bool isRememberMe = false;
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  void showAlertDialog(BuildContext context) {
+    // set up the button
+    Widget okButton = TextButton(
+      child: Text("OK"),
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
+    );
+  }
+
+  Future<void> checkAndLogin() async {
+    //These are for debug reasons only
+    print('email: ' + emailController.text);
+    print('Password: ' + passwordController.text);
+
+    final user = FirebaseFirestore.instance
+        .collection('Users')
+        .where('email', isEqualTo: emailController);
+
+    emailController.clear();
+    passwordController.clear();
+  }
 
   Widget buildEmail() {
     return Column(
@@ -101,7 +130,7 @@ class _loginPageState extends State<loginPage> {
             shape: MaterialStateProperty.all(RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15))),
             padding: MaterialStateProperty.all(EdgeInsets.all(25))),
-        onPressed: () => print('Login Pressed'),
+        onPressed: () => {},
         child: (Text(
           'LOGIN',
           style: (TextStyle(
@@ -143,7 +172,11 @@ class _loginPageState extends State<loginPage> {
 
   Widget buildSignUpBtn() {
     return GestureDetector(
-      onTap: () => print("Sign Up Pressed"),
+      onTap: () => {
+        print("Sign up pressed"),
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const registerPage()))
+      },
       child: RichText(
         text: TextSpan(children: [
           TextSpan(

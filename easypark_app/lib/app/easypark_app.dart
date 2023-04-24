@@ -19,7 +19,7 @@ class EasyParkApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: registerPage(),
+      home: loginPage(),
     );
   }
 }
