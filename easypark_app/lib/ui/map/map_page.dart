@@ -25,8 +25,8 @@ class MapPage extends StatelessWidget {
       body: OSMFlutter(
         controller: mapController,
         trackMyPosition: false,
-        initZoom: 12,
-        minZoomLevel: 10,
+        initZoom: 16,
+        minZoomLevel: 13,
         maxZoomLevel: 19,
         stepZoom: 1.0,
         userLocationMarker: UserLocationMaker(
