@@ -37,10 +37,15 @@ class _loginPageState extends State<loginPage> {
 
     final user = FirebaseFirestore.instance
         .collection('Users')
-        .where('email', isEqualTo: emailController);
+        .where('Email', isEqualTo: emailController)
+        .where('Password', isEqualTo: passwordController)
+        .limit(1)
+        .get();
 
     emailController.clear();
     passwordController.clear();
+
+    print(user);
   }
 
   Widget buildEmail() {
