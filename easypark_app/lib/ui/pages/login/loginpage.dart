@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
+import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:easypark_app/ui/pages/login/registerpage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,6 +29,24 @@ class _loginPageState extends State<loginPage> {
         Navigator.of(context).pop();
       },
     );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text("Invalid user"),
+      content: Text(
+          "This user does not exist. Check if you filled in the correct email and/or password."),
+      actions: [
+        okButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
   }
 
   Future<void> checkAndLogin() async {
@@ -35,17 +54,34 @@ class _loginPageState extends State<loginPage> {
     print('email: ' + emailController.text);
     print('Password: ' + passwordController.text);
 
-    final user = FirebaseFirestore.instance
-        .collection('Users')
-        .where('Email', isEqualTo: emailController)
-        .where('Password', isEqualTo: passwordController)
-        .limit(1)
-        .get();
+    bool userExists =
+        await isUserPresent(emailController.text, passwordController.text);
+    if (userExists) {
+      print("User exists!");
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => HomePage(
+                  title: 'EasyPark',
+                )),
+      );
+    } else {
+      print("User does not exist.");
+      showAlertDialog(context);
+    }
 
     emailController.clear();
     passwordController.clear();
+  }
 
-    print(user);
+  Future<bool> isUserPresent(String mail, String pwd) async {
+    final user = await FirebaseFirestore.instance
+        .collection('Users')
+        .where('Email', isEqualTo: mail)
+        .where('Password', isEqualTo: pwd)
+        .limit(1)
+        .get();
+    return user.docs.isNotEmpty;
   }
 
   Widget buildEmail() {
@@ -72,6 +108,7 @@ class _loginPageState extends State<loginPage> {
               ]),
           height: 60,
           child: TextField(
+            controller: emailController,
             keyboardType: TextInputType.emailAddress,
             style: TextStyle(color: Colors.black87),
             decoration: InputDecoration(
@@ -110,6 +147,7 @@ class _loginPageState extends State<loginPage> {
               ]),
           height: 60,
           child: TextField(
+            controller: passwordController,
             obscureText: true,
             style: TextStyle(color: Colors.black87),
             decoration: InputDecoration(
@@ -135,7 +173,7 @@ class _loginPageState extends State<loginPage> {
             shape: MaterialStateProperty.all(RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15))),
             padding: MaterialStateProperty.all(EdgeInsets.all(25))),
-        onPressed: () => {},
+        onPressed: () => {checkAndLogin()},
         child: (Text(
           'LOGIN',
           style: (TextStyle(
