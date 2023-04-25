@@ -280,7 +280,7 @@ class _loginPageState extends State<loginPage> {
                       SizedBox(height: 20),
                       buildPassword(),
                       SizedBox(height: 10),
-                      buildRememberCb(),
+                      // buildRememberCb(),
                       buildLoginButton(),
                       buildSignUpBtn()
                     ],
