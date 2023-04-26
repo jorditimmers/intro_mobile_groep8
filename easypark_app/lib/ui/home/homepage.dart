@@ -30,7 +30,7 @@ class _HomePageState extends State<HomePage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(5))),
                     ),
                     child: Text('Map'),
                     onPressed: () {
@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(5))),
                     ),
                     child: Text('Indicate Departure'),
                     onPressed: () {
