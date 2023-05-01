@@ -1,6 +1,10 @@
 import 'package:easypark_app/ui/headerbar/headerbar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map/plugin_api.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
@@ -10,174 +14,170 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  //List<Marker> markers = [];
-  final MapController mapController = MapController.withPosition(
-    initPosition: GeoPoint(
-      latitude: 51.2288,
-      longitude: 4.41562,
-    ), //AP Hogeschool Campus Ellermanstraat
-    areaLimit: BoundingBox(
-      east: 4.41721,
-      north: 51.22978,
-      south: 51.22786,
-      west: 4.41366,
-    ),
-  );
+  void getAllMarkers() {
+    FirebaseFirestore.instance.collection('Location').get().then(
+      (querySnapshot) {
+        print("Successfully completed");
+        for (var docSnapshot in querySnapshot.docs) {
+          setState(() {
+            _markers.add(Marker(
+                point: LatLng(docSnapshot.get('Location').latitude,
+                    docSnapshot.get('Location').longitude),
+                builder: (context) {
+                  return Icon(
+                    Icons.location_on_rounded,
+                    size: 42,
+                    color: Colors.green,
+                  );
+                }));
+          });
+        }
+      },
+      onError: (e) => print("Error completing: $e"),
+    );
+  }
+
+  final List<Marker> _markers = [];
+  DateTime _time = DateTime.now();
+
+  final MapController _mapController = MapController();
 
   bool isReserved = false;
 
-  dynamic addMarkerOnTap() {
-    mapController.listenerMapSingleTapping.addListener(() {
-      if (mapController.listenerMapSingleTapping.value != null) {
-        GeoPoint p = mapController.listenerMapSingleTapping.value!;
-        mapController.addMarker(p);
-        showModalBottomSheet(
-            context: context,
-            builder: (context) {
-              return SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.2,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        SizedBox(
-                          child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.blue,
-                                shape: const RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(5))),
-                              ),
-                              child: Text('Reserve'),
-                              onPressed: () {
-                                isReserved = true;
-                                Navigator.pop(context);
-                              }),
-                        ),
-                        SizedBox(
-                          child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                foregroundColor: Colors.white60,
-                                backgroundColor: Colors.black45,
-                                shape: const RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(5))),
-                              ),
-                              child: Text('Cancel'),
-                              onPressed: () {
-                                Navigator.pop(context);
-                              }),
-                        )
-                      ],
-                    ),
-                  ));
-            }).then((value) => {
-              mapController.removeMarker(p),
-              if (isReserved)
-                {
-                  mapController.addMarker(p,
-                      markerIcon: const MarkerIcon(
-                        icon: Icon(
-                          Icons.person_pin_circle,
-                          color: Colors.lightGreen,
-                          size: 84,
-                        ),
-                      ))
-                },
-              isReserved = false
-            });
-      }
+  void _addMarker(LatLng pos) {
+    setState(() {});
+    _markers.add(Marker(
+        point: pos,
+        builder: (context) => const Icon(
+              Icons.location_on_rounded,
+              size: 42,
+              color: Colors.redAccent,
+            )));
+  }
+
+  void _removeMarkerFromDatabase(LatLng pos, DateTime time) {
+    FirebaseFirestore.instance.collection('Location').doc();
+  }
+
+  void _removeMarker() {
+    setState(() {
+      _markers.removeLast();
     });
   }
 
-  void indicateDeparture() {}
+  void writeMarkerToDatabase(LatLng pos, DateTime time) {
+    FirebaseFirestore.instance.collection('Location').add({
+      'Location': GeoPoint(pos.latitude, pos.longitude),
+      'Time': Timestamp.fromDate(time)
+    });
+  }
+
+  void _selectTime(LatLng pos) async {
+    TimeOfDay? newTime;
+    final DateTime? date = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(Duration(days: 14)));
+
+    if (date != null) {
+      newTime = await showTimePicker(
+        confirmText: 'Confirm your reservation',
+        context: context,
+        initialTime: TimeOfDay.now(),
+        initialEntryMode: TimePickerEntryMode.dial,
+      );
+    }
+    if (newTime != null) {
+      DateTime newDate = DateTime(
+          date!.year, date.month, date.day, newTime.hour, newTime.minute);
+      writeMarkerToDatabase(pos, newDate);
+      setState(() {
+        _time = newDate;
+      });
+    } else {
+      _removeMarker();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: headerBar(),
-      body: OSMFlutter(
-        onMapIsReady: addMarkerOnTap(),
-        onGeoPointClicked: (p) {
-          showModalBottomSheet(
-              context: context,
-              builder: (context) {
-                return SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.2,
-                  child: Center(
-                      child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      SizedBox(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.blue,
-                            shape: const RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(5))),
-                          ),
-                          onPressed: () {
-                            mapController.removeMarker(p);
-                            Navigator.pop(context);
-                          },
-                          child: Text('Depart'),
+      body: FlutterMap(
+        mapController: _mapController,
+        options: MapOptions(
+          onMapReady: getAllMarkers,
+          minZoom: 18,
+          maxZoom: 18,
+          maxBounds: LatLngBounds(
+              LatLng(51.22978, 4.41376), LatLng(51.22765, 4.41789)),
+          onTap: (tp, latlng) {
+            _addMarker(latlng);
+            showModalBottomSheet(
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(25.0),
+                  ),
+                ),
+                useSafeArea: true,
+                context: context,
+                builder: (context) {
+                  return SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.2,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            SizedBox(
+                              child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Colors.blue,
+                                    shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(5))),
+                                  ),
+                                  child: const Text('Reserve'),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _selectTime(latlng);
+                                    isReserved = true;
+                                  }),
+                            ),
+                            SizedBox(
+                              child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.white60,
+                                    backgroundColor: Colors.black45,
+                                    shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(5))),
+                                  ),
+                                  child: const Text('Cancel'),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  }),
+                            )
+                          ],
                         ),
-                      ),
-                      SizedBox(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.black45,
-                            shape: const RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(5))),
-                          ),
-                          onPressed: () {
-                            mapController.removeMarker(p);
-                            Navigator.pop(context);
-                          },
-                          child: Text('Cancel'),
-                        ),
-                      )
-                    ],
-                  )),
-                );
-              });
-        },
-        controller: mapController,
-        trackMyPosition: false,
-        initZoom: 18,
-        minZoomLevel: 18,
-        maxZoomLevel: 19,
-        stepZoom: 1.0,
-        userLocationMarker: UserLocationMaker(
-          personMarker: const MarkerIcon(
-            icon: Icon(
-              Icons.location_history_rounded,
-              color: Colors.red,
-              size: 48,
-            ),
-          ),
-          directionArrowMarker: const MarkerIcon(
-            icon: Icon(
-              Icons.double_arrow,
-              size: 48,
-            ),
-          ),
+                      ));
+                }).whenComplete(() => {
+                  _removeMarker(),
+                  if (isReserved) {_addMarker(latlng)},
+                  isReserved = false
+                });
+          },
+          center: LatLng(51.22857, 4.41646),
+          zoom: 18.0,
         ),
-        roadConfiguration: const RoadOption(
-          roadColor: Colors.yellowAccent,
-        ),
-        markerOption: MarkerOption(
-            defaultMarker: const MarkerIcon(
-          icon: Icon(
-            Icons.person_pin_circle,
-            color: Colors.blue,
-            size: 56,
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'edu.ap.mobilegroep8',
           ),
-        )),
+          MarkerLayer(markers: _markers)
+        ],
       ),
     );
   }
