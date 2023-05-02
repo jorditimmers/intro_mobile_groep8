@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/model/user.dart';
+import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -238,6 +239,13 @@ class _registerPageState extends State<registerPage> {
     emailController.clear();
     passwordController.clear();
     repeatPasswordController.clear();
+
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => HomePage(
+                  title: 'EasyPark',
+                )));
   }
 
   void showAlertDialog(BuildContext context) {

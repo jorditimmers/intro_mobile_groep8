@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/strings.dart';
+import 'package:easypark_app/ui/pages/settings/settings.dart';
 import 'package:flutter/material.dart';
 
-headerBar() => AppBar(
+headerBar(BuildContext context) => AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
       title: Text(
@@ -11,7 +13,10 @@ headerBar() => AppBar(
       foregroundColor: Colors.blue,
       leading: IconButton(
         onPressed: () {
-          //OPEN MENU HERE
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SettingsPage()),
+          ); //OPEN MENU HERE
         },
         icon: Icon(
           Icons.settings_outlined,
