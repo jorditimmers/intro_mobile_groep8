@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 
+import '../../../global/global.dart';
+
 class registerPage extends StatefulWidget {
   const registerPage({super.key});
 
@@ -250,6 +252,8 @@ class _registerPageState extends State<registerPage> {
 
     if (!userExists) {
       await docUser.set(json);
+
+      globalSessionData.userEmail = emailController.text;
 
       Navigator.pushReplacement(
           context,
