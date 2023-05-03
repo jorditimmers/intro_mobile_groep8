@@ -8,7 +8,6 @@ import Foundation
 import cloud_firestore
 import firebase_core
 import firebase_storage
-import shared_preferences_foundation
 import shared_preferences_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {

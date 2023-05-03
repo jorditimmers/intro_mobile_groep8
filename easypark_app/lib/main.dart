@@ -5,8 +5,9 @@ import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<void> main() async {
-  runApp(EasyParkApp());
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  runApp(EasyParkApp());
 }
