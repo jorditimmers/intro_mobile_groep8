@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easypark_app/global/global.dart';
 
 import '../../../model/user.dart';
 
@@ -62,6 +63,7 @@ class _loginPageState extends State<loginPage> {
       //Add username to sharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('userEmail', emailController.text);
+      globalSessionData.userEmail = emailController.text;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

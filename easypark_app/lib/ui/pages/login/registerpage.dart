@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/model/user.dart';
+import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
+
+import '../../../global/global.dart';
 
 class registerPage extends StatefulWidget {
   const registerPage({super.key});
@@ -218,6 +221,16 @@ class _registerPageState extends State<registerPage> {
     );
   }
 
+  Future<bool> isUserPresent(String mail, String pwd) async {
+    final user = await FirebaseFirestore.instance
+        .collection('Users')
+        .where('Email', isEqualTo: mail)
+        .where('Password', isEqualTo: pwd)
+        .limit(1)
+        .get();
+    return user.docs.isNotEmpty;
+  }
+
   Future<void> checkAndStore() async {
     //These are for debug reasons only
     print('Username: ' + usernameController.text);
@@ -225,19 +238,32 @@ class _registerPageState extends State<registerPage> {
     print('Password: ' + passwordController.text);
     print('Repeated Password: ' + repeatPasswordController.text);
 
-    final docUser = FirebaseFirestore.instance.collection('Users').doc();
+    final docUser = FirebaseFirestore.instance
+        .collection('Users')
+        .doc(emailController.text);
 
     final User newUser = User(
         emailController.text, passwordController.text, usernameController.text);
 
     final json = newUser.toJson();
 
-    await docUser.set(json);
+    bool userExists =
+        await isUserPresent(emailController.text, passwordController.text);
 
-    usernameController.clear();
-    emailController.clear();
-    passwordController.clear();
-    repeatPasswordController.clear();
+    if (!userExists) {
+      await docUser.set(json);
+
+      globalSessionData.userEmail = emailController.text;
+
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => HomePage(
+                    title: 'EasyPark',
+                  )));
+    } else {
+      showUserExists(context);
+    }
   }
 
   void showAlertDialog(BuildContext context) {
@@ -254,6 +280,33 @@ class _registerPageState extends State<registerPage> {
       title: Text("Wrong input"),
       content: Text(
           "The input is wrong. Make sure you filled in all information and your passwords match."),
+      actions: [
+        okButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  void showUserExists(BuildContext context) {
+    // set up the button
+    Widget okButton = TextButton(
+      child: Text("OK"),
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text("Email already in use."),
+      content: Text("A User with this email is already created"),
       actions: [
         okButton,
       ],
