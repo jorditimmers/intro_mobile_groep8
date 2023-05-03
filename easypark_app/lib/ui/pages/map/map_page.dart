@@ -25,7 +25,7 @@ class _MapPageState extends State<MapPage> {
 
   Future<List<Location>> getAllLocations() async {
     QuerySnapshot querySnapshot =
-        await FirebaseFirestore.instance.collection('Location').get();
+        await FirebaseFirestore.instance.collection('Locations').get();
     print(querySnapshot);
     List<Location> locations = querySnapshot.docs.map((doc) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -100,7 +100,6 @@ class _MapPageState extends State<MapPage> {
 
   void _setMarkersOnLocations() async {
     _locations = await getAllLocations();
-    print('debug');
     for (var location in _locations) {
       setState(() {
         if (location.ownerEmail == 'kaasbaas') {
