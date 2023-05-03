@@ -1,5 +1,5 @@
 import 'package:easypark_app/strings.dart';
-import 'package:easypark_app/ui/map/map_page.dart';
+import 'package:easypark_app/ui/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../elements/headerbar.dart';
