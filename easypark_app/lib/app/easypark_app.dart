@@ -1,6 +1,7 @@
 import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:easypark_app/ui/pages/login/loginpage.dart';
 import 'package:easypark_app/ui/pages/login/registerpage.dart';
+import 'package:easypark_app/ui/pages/settings/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:easypark_app/strings.dart' as strings;
 
