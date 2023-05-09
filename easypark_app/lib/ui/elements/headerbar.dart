@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/strings.dart';
+import 'package:easypark_app/ui/pages/account/account.dart';
 import 'package:easypark_app/ui/pages/settings/settings.dart';
 import 'package:flutter/material.dart';
 
@@ -26,7 +27,10 @@ headerBar(BuildContext context) => AppBar(
       actions: [
         IconButton(
             onPressed: () {
-              //OPEN ACCOUNT SETTINGS HERE
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AccountPage()),
+              ); //OPEN ACCOUNT SETTINGS HERE
             },
             icon: Icon(Icons.account_circle_outlined))
       ],
