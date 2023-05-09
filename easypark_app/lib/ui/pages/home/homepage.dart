@@ -21,46 +21,92 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
         appBar: headerBar(context),
         body: Center(
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.90,
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
-                    ),
-                    child: Text('Map'),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => MapPage()),
-                      );
-                    },
-                  ),
+          child: Column(children: [
+            SizedBox(
+              height: 10,
+            ),
+            GestureDetector(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                        width: MediaQuery.of(context).size.width * 0.90,
+                        height: MediaQuery.of(context).size.height * 0.4,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          color: Color.fromARGB(64, 0, 0, 0),
+                          image: DecorationImage(
+                              image: AssetImage("assets/images/map.png"),
+                              fit: BoxFit.cover), // button text
+                        )),
+                    Text('MAP',
+                        style: const TextStyle(
+                            shadows: <Shadow>[
+                              Shadow(
+                                offset: Offset(10.0, 10.0),
+                                blurRadius: 3.0,
+                                color: Color.fromARGB(255, 0, 0, 0),
+                              ),
+                              Shadow(
+                                offset: Offset(10.0, 10.0),
+                                blurRadius: 8.0,
+                                color: Color.fromARGB(124, 0, 0, 0),
+                              ),
+                            ],
+                            fontFamily: 'SF_Pro',
+                            fontSize: 80,
+                            color: Colors.white))
+                  ],
                 ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.90,
-                  height: MediaQuery.of(context).size.height * 0.3,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
-                    ),
-                    child: Text('Indicate Departure'),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => MapPage()),
-                      );
-                    },
-                  ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MapPage()),
+                  );
+                }),
+            SizedBox(
+              height: 20,
+            ),
+            GestureDetector(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                        width: MediaQuery.of(context).size.width * 0.90,
+                        height: MediaQuery.of(context).size.height * 0.3,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          color: Color.fromARGB(64, 0, 0, 0),
+                          image: DecorationImage(
+                              image: AssetImage("assets/images/depart.jpeg"),
+                              fit: BoxFit.cover), // button text
+                        )),
+                    Text('DEPARTURE',
+                        style: const TextStyle(
+                            shadows: <Shadow>[
+                              Shadow(
+                                offset: Offset(10.0, 10.0),
+                                blurRadius: 3.0,
+                                color: Color.fromARGB(255, 0, 0, 0),
+                              ),
+                              Shadow(
+                                offset: Offset(10.0, 10.0),
+                                blurRadius: 8.0,
+                                color: Color.fromARGB(124, 0, 0, 0),
+                              ),
+                            ],
+                            fontFamily: 'SF_Pro',
+                            fontSize: 80,
+                            color: Colors.white))
+                  ],
                 ),
-              ]),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MapPage()),
+                  );
+                }),
+          ]),
         ));
   }
 }
