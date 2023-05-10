@@ -5,8 +5,9 @@ class Location {
   GeoPoint geoPoint;
   Timestamp timestamp;
   String ownerEmail;
+  bool isReserved;
 
-  Location(this.geoPoint, this.ownerEmail, this.timestamp);
+  Location(this.geoPoint, this.ownerEmail, this.timestamp, this.isReserved);
 
   String toString() => "Location<$geoPoint>";
 
@@ -16,16 +17,14 @@ class Location {
   Map<String, dynamic> toJson() => _locationToJson(this);
 
   static Location _locationFromJson(Map<String, dynamic> json) {
-    return Location(
-      json['Location'] as GeoPoint,
-      json['OwnerEmail'] as String,
-      json['Time'] as Timestamp,
-    );
+    return Location(json['Location'] as GeoPoint, json['OwnerEmail'] as String,
+        json['Time'] as Timestamp, json['IsReserved'] as bool);
   }
 
   Map<String, dynamic> _locationToJson(Location instance) => <String, dynamic>{
         'Location': instance.geoPoint,
         'OwnerEmail': instance.ownerEmail,
         'Time': instance.timestamp,
+        'IsReserved': instance.isReserved
       };
 }
