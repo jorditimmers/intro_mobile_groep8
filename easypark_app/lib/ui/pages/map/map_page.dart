@@ -1,4 +1,7 @@
+import 'dart:html';
+
 import 'package:easypark_app/extensions/geopoint_extensions.dart';
+import 'package:easypark_app/global/global.dart';
 import 'package:easypark_app/model/location.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
 import 'package:flutter/material.dart';
@@ -15,142 +18,229 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  Future<String> getCurrentUser() async {
-    //final prefs = await SharedPreferences.getInstance();
-    //prefs.setString('userEmail', 'kaasbalsnuiver');
-    return 'kaasbaas';
+  Stream<QuerySnapshot> _locationsStream = Stream.empty();
+  @override
+  initState() {
+    super.initState();
+    _locationsStream =
+        FirebaseFirestore.instance.collection('Locations').snapshots();
   }
 
-  List<Location> _locations = [];
-
-  Future<List<Location>> getAllLocations() async {
-    QuerySnapshot querySnapshot =
-        await FirebaseFirestore.instance.collection('Locations').get();
-    print(querySnapshot);
-    List<Location> locations = querySnapshot.docs.map((doc) {
+  List<Location> getLocations(AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
+    return snapshot.data!.docs.map((doc) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       return Location.fromJson(data);
     }).toList();
-    print(locations);
-    return locations;
   }
 
-  DateTime _timeStampToDateTime(Timestamp t) => t.toDate();
+  StreamBuilder<QuerySnapshot> _markerLayer() => StreamBuilder(
+      stream: _locationsStream,
+      builder: (context, snapshot) {
+        List<Marker> markers = _markersList(snapshot);
+        return MarkerLayer(markers: markers);
+      });
 
-  void onMapReady() {
-    setState(() {
-      _setMarkersOnLocations();
-    });
+  void onMapReady() {}
+
+  void writeMarkerToDatabase(LatLng pos, DateTime time, bool isReserved) {
+    Location l = Location(
+        GeoPoint(pos.latitude, pos.longitude),
+        globalSessionData.userEmail as String,
+        Timestamp.fromDate(time),
+        isReserved);
+
+    FirebaseFirestore.instance
+        .collection('Locations')
+        .doc(l.geoPoint.longitude.toString() +
+            l.geoPoint.latitude.toString() +
+            l.timestamp.toString())
+        .set(l.toJson());
   }
 
-  final List<Marker> _markers = [];
-
-  final MapController _mapController = MapController();
-
-  bool isReserved = false;
-
-  void _addTempMarker(LatLng pos) {
-    setState(() {});
-    _markers.add(Marker(
-        point: pos,
-        builder: (context) => const Icon(
-              Icons.location_on_rounded,
-              size: 42,
-              color: Colors.redAccent,
-            )));
+  void removeMarkerFromDatabase(Location l) {
+    FirebaseFirestore.instance
+        .collection('Locations')
+        .doc(l.geoPoint.longitude.toString() +
+            l.geoPoint.latitude.toString() +
+            l.timestamp.toString())
+        .delete();
   }
 
-  void _removeTempMarker() {
-    setState(() {
-      _markers.removeLast();
-    });
-  }
-
-  void writeMarkerToDatabase(LatLng pos, DateTime time) {
-    FirebaseFirestore.instance.collection('Locations').add({
-      'Location': GeoPoint(pos.latitude, pos.longitude),
-      'OwnerEmail': 'test',
-      'Time': Timestamp.fromDate(time),
-    });
-  }
-
-  void _selectTime(LatLng pos) async {
-    TimeOfDay? newTime;
+  Future<DateTime?> _selectDate(DateTime start) async {
     final DateTime? date = await showDatePicker(
         context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime.now(),
-        lastDate: DateTime.now().add(Duration(days: 14)));
-
-    if (date != null) {
-      newTime = await showTimePicker(
-        confirmText: 'Confirm your reservation',
-        context: context,
-        initialTime: TimeOfDay.now(),
-        initialEntryMode: TimePickerEntryMode.dial,
-      );
-    }
-    if (newTime != null) {
-      DateTime newDate = DateTime(
-          date!.year, date.month, date.day, newTime.hour, newTime.minute);
-      writeMarkerToDatabase(pos, newDate);
-    }
-    _setMarkersOnLocations();
+        initialDate: start,
+        firstDate: start,
+        lastDate: DateTime.now().add(Duration(days: 1)));
+    return date;
   }
 
-  void _setMarkersOnLocations() async {
-    _locations = await getAllLocations();
-    for (var location in _locations) {
-      setState(() {
-        if (location.ownerEmail == 'kaasbaas') {
-          _markers.add(Marker(
-              point: location.geoPoint.toLatLng(),
-              builder: (contex) {
-                return GestureDetector(
-                  onTap: () {
-                    showModalBottomSheet(
-                        context: context,
-                        builder: (context) => SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.2,
-                              child: Column(children: [
-                                Text('Reserved until {}'),
-                                ElevatedButton(
-                                    onPressed: () {},
-                                    child: Text('Indicate Departure'))
-                              ]),
-                            ));
-                  },
-                  child: const Icon(
-                    Icons.location_on_rounded,
-                    size: 42,
-                    color: Colors.green,
-                  ),
-                );
-              }));
-        } else {
-          _markers.add(Marker(
-              point: location.geoPoint.toLatLng(),
-              builder: (contex) {
-                return GestureDetector(
-                  onTap: () {
-                    showModalBottomSheet(
-                        context: context,
-                        builder: (context) => SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.2,
-                              child:
-                                  Column(children: [Text('Reserved until {}')]),
-                            ));
-                  },
-                  child: const Icon(
-                    Icons.location_on_rounded,
-                    size: 42,
-                    color: Colors.blue,
-                  ),
-                );
-              }));
-        }
-      });
+  Future<TimeOfDay?> _selectTime() async {
+    TimeOfDay? newTime;
+    newTime = await showTimePicker(
+      confirmText: 'Confirm your reservation',
+      context: context,
+      initialTime: TimeOfDay.now(),
+      initialEntryMode: TimePickerEntryMode.dial,
+    );
+    return newTime;
+  }
+
+  void _selectDateAndTime(LatLng pos, DateTime start, isReserved) async {
+    DateTime? date = await _selectDate(start);
+    TimeOfDay? time;
+    if (date != null) {
+      time = await _selectTime();
     }
+    if (date != null && time != null) {
+      DateTime newDate =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      writeMarkerToDatabase(pos, newDate, isReserved);
+    }
+  }
+
+  void reserveMenu(LatLng latlng, DateTime startTime) {
+    showModalBottomSheet(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(25.0),
+          ),
+        ),
+        useSafeArea: true,
+        context: context,
+        builder: (context) {
+          return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.2,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    SizedBox(
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.blue,
+                            shape: const RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(5))),
+                          ),
+                          child: const Text('Reserve'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _selectDateAndTime(latlng, startTime, false);
+                          }),
+                    ),
+                    SizedBox(
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white60,
+                            backgroundColor: Colors.black45,
+                            shape: const RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(5))),
+                          ),
+                          child: const Text('Cancel'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          }),
+                    )
+                  ],
+                ),
+              ));
+        }).whenComplete(() => {});
+  }
+
+  void showOwnMarkerMenu(Location location) {
+    showModalBottomSheet(
+        context: context,
+        builder: (context) => SizedBox(
+              height: MediaQuery.of(context).size.height * 0.2,
+              child: Column(children: [
+                Text('Reserved until ${location.timestamp.toDate()}'),
+                ElevatedButton(
+                    onPressed: () {
+                      //TODO: Confirmation pop up
+                      removeMarkerFromDatabase(location);
+                      Navigator.pop(context);
+                    },
+                    child: Text('Indicate Departure')),
+                ElevatedButton(
+                    onPressed: () {
+                      if (!location.isReserved) {
+                        _selectDateAndTime(location.geoPoint.toLatLng(),
+                            location.timestamp.toDate(), true);
+                      } else {
+                        null;
+                      }
+                    },
+                    child: Text('Extend Reservation')),
+              ]),
+            ));
+  }
+
+  void showOthersMarkerMenu(Location location) {
+    showModalBottomSheet(
+        context: context,
+        builder: (context) => SizedBox(
+              height: MediaQuery.of(context).size.height * 0.2,
+              child: Column(children: [
+                Text('Reserved until ${location.timestamp.toDate()}'),
+                ElevatedButton(
+                    onPressed: () {
+                      if (!location.isReserved) {
+                        _selectDateAndTime(location.geoPoint.toLatLng(),
+                            location.timestamp.toDate(), true);
+                      } else {
+                        null;
+                      }
+                    },
+                    child: const Text('Reserve spot'))
+              ]),
+            ));
+  }
+
+  List<Marker> _markersList(AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
+    List<Marker> markers = [];
+    List<Location> locations = getLocations(snapshot);
+    for (var location in locations) {
+      if (location.timestamp
+          .toDate()
+          .isBefore(DateTime.now().add(const Duration(minutes: 30)))) {
+        //TODO: change marker color om time
+      }
+      if (location.ownerEmail == globalSessionData.userEmail) {
+        markers.add(Marker(
+            point: location.geoPoint.toLatLng(),
+            builder: (context) {
+              return GestureDetector(
+                onTap: () {
+                  showOwnMarkerMenu(location);
+                },
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  size: 42,
+                  color: Colors.green,
+                ),
+              );
+            }));
+      } else {
+        markers.add(Marker(
+            point: location.geoPoint.toLatLng(),
+            builder: (context) {
+              return GestureDetector(
+                onTap: () {
+                  showOthersMarkerMenu(location);
+                },
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  size: 42,
+                  color: Colors.blue,
+                ),
+              );
+            }));
+      }
+    }
+    return markers;
   }
 
   @override
@@ -158,65 +248,15 @@ class _MapPageState extends State<MapPage> {
     return Scaffold(
       appBar: headerBar(context),
       body: FlutterMap(
-        mapController: _mapController,
+        mapController: MapController(),
         options: MapOptions(
-          onMapReady: onMapReady,
+          onMapReady: () {},
           minZoom: 18,
           maxZoom: 18,
           maxBounds: LatLngBounds(
               LatLng(51.22978, 4.41376), LatLng(51.22765, 4.41789)),
           onTap: (tp, latlng) {
-            _addTempMarker(latlng);
-            showModalBottomSheet(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(25.0),
-                      ),
-                    ),
-                    useSafeArea: true,
-                    context: context,
-                    builder: (context) {
-                      return SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.2,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                SizedBox(
-                                  child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: Colors.white,
-                                        backgroundColor: Colors.blue,
-                                        shape: const RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(5))),
-                                      ),
-                                      child: const Text('Reserve'),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        _selectTime(latlng);
-                                      }),
-                                ),
-                                SizedBox(
-                                  child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        foregroundColor: Colors.white60,
-                                        backgroundColor: Colors.black45,
-                                        shape: const RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(5))),
-                                      ),
-                                      child: const Text('Cancel'),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      }),
-                                )
-                              ],
-                            ),
-                          ));
-                    })
-                .whenComplete(
-                    () => {_setMarkersOnLocations(), _removeTempMarker()});
+            reserveMenu(latlng, DateTime.now());
           },
           center: LatLng(51.22857, 4.41646),
           zoom: 18.0,
@@ -226,7 +266,7 @@ class _MapPageState extends State<MapPage> {
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             userAgentPackageName: 'edu.ap.mobilegroep8',
           ),
-          MarkerLayer(markers: _markers)
+          _markerLayer(),
         ],
       ),
     );
