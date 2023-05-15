@@ -27,6 +27,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   ButtonStyle blueRounded = ElevatedButton.styleFrom(
+    disabledBackgroundColor: Colors.white24,
     foregroundColor: Colors.white,
     backgroundColor: Colors.blue,
     shape: const RoundedRectangleBorder(
@@ -55,21 +56,39 @@ class _MapPageState extends State<MapPage> {
     //     .toList();
   }
 
+  void _removeExpiredLocations(AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
+    for (var location in getLocations(snapshot)) {
+      if (location.timestamp.toDate().isBefore(DateTime.now())) {
+        removeMarkerFromDatabase(location);
+        //TODO: IF nextT => addLocation() else removeMarkerFromDB
+      }
+    }
+  }
+
   StreamBuilder<QuerySnapshot> _markerLayer() => StreamBuilder(
-      stream: _locationsStream,
-      builder: (context, snapshot) {
-        List<Marker> markers = _markersList(snapshot);
-        return MarkerLayer(markers: markers);
-      });
+        stream: _locationsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // Show loading indicator or placeholder
+            return CircularProgressIndicator();
+          } else if (snapshot.hasError) {
+            // Show error message
+            return Text('Error: ${snapshot.error}');
+          } else {
+            // Build markers
+            List<Marker> markers = _markersList(snapshot);
+            return MarkerLayer(markers: markers);
+          }
+        },
+      );
 
-  void onMapReady() {}
-
-  void writeMarkerToDatabase(LatLng pos, DateTime time, bool isReserved) {
+  void writeMarkerToDatabase(LatLng pos, DateTime time) {
     Location l = Location(
         GeoPoint(pos.latitude, pos.longitude),
         globalSessionData.userEmail as String,
         Timestamp.fromDate(time),
-        isReserved);
+        null,
+        null);
 
     FirebaseFirestore.instance
         .collection('Locations')
@@ -77,6 +96,18 @@ class _MapPageState extends State<MapPage> {
             l.geoPoint.latitude.toString() +
             l.timestamp.toString())
         .set(l.toJson());
+  }
+
+  void writeNextReservationToLocation(
+      Location l, String? nextOwnerEmail, DateTime nextTimestamp) {
+    l.nextOwnerEmail = nextOwnerEmail;
+    l.nextTimestamp = Timestamp.fromDate(nextTimestamp);
+    FirebaseFirestore.instance
+        .collection('Locations')
+        .doc(l.geoPoint.longitude.toString() +
+            l.geoPoint.latitude.toString() +
+            l.timestamp.toString())
+        .update(l.toJson());
   }
 
   void removeMarkerFromDatabase(Location l) {
@@ -128,7 +159,20 @@ class _MapPageState extends State<MapPage> {
     return newTime;
   }
 
-  void _selectDateAndTime(LatLng pos, DateTime start, isReserved) async {
+  void createNewLocation(LatLng pos) async {
+    DateTime? date = await _selectDate(DateTime.now());
+    TimeOfDay? time;
+    if (date != null) {
+      time = await _selectTime();
+    }
+    if (date != null && time != null) {
+      DateTime newDate =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      writeMarkerToDatabase(pos, newDate);
+    }
+  }
+
+  void updateLocation(Location l, DateTime start) async {
     DateTime? date = await _selectDate(start);
     TimeOfDay? time;
     if (date != null) {
@@ -137,7 +181,11 @@ class _MapPageState extends State<MapPage> {
     if (date != null && time != null) {
       DateTime newDate =
           DateTime(date.year, date.month, date.day, time.hour, time.minute);
-      writeMarkerToDatabase(pos, newDate, isReserved);
+      if (!newDate.isBefore(start)) {
+        writeNextReservationToLocation(l, globalSessionData.userEmail, newDate);
+      }
+    } else {
+      return;
     }
   }
 
@@ -163,7 +211,7 @@ class _MapPageState extends State<MapPage> {
                           child: const Text('Reserve'),
                           onPressed: () {
                             Navigator.pop(context);
-                            _selectDateAndTime(latlng, startTime, false);
+                            createNewLocation(latlng);
                           }),
                     ),
                     SizedBox(
@@ -181,73 +229,145 @@ class _MapPageState extends State<MapPage> {
   }
 
   void showOwnMarkerMenu(Location location) {
-    showModalBottomSheet(
-        context: context,
-        builder: (context) => SizedBox(
+    Column reserved =
+        Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Text('This spot is reserved until ${location.timestamp.toDate()}'),
+          Text('Next reservation: ${location.nextTimestamp?.toDate()}')
+        ],
+      ),
+      ElevatedButton(
+          style: blueRounded,
+          onPressed: () {
+            //TODO: Confirmation pop up
+            showDialog(
+                context: context,
+                builder: (BuildContext context) =>
+                    _buildConfirmDeparture(context, location));
+            Navigator.of(context).pop(context);
+          },
+          child: Text('Cancel current reservation')),
+      ElevatedButton(
+          style: blueRounded,
+          onPressed: () {
+            //TODO: Confirmation pop up
+            showDialog(
+                context: context,
+                builder: (BuildContext context) =>
+                    _buildConfirmDeparture(context, location));
+            Navigator.of(context).pop(context);
+          },
+          child: Text('Cancel next reservation'))
+    ]);
+    Column notReserved =
+        Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Text('This spot is reserved until ${location.timestamp.toDate()}'),
+          Text('Next reservation: ${location.nextTimestamp?.toDate()}')
+        ],
+      ),
+      ElevatedButton(
+          style: blueRounded,
+          onPressed: () {
+            //TODO: Confirmation pop up
+            showDialog(
+                context: context,
+                builder: (BuildContext context) =>
+                    _buildConfirmDeparture(context, location));
+            Navigator.of(context).pop(context);
+          },
+          child: Text('Indicate Departure')),
+      ElevatedButton(
+          style: blueRounded,
+          onPressed: () {
+            if (location.nextOwnerEmail == null) {
+              updateLocation(location, location.timestamp.toDate());
+            } else {
+              null;
+            }
+          },
+          child: Text('Extend Reservation')),
+    ]);
+    if (location.nextOwnerEmail == null) {
+      showModalBottomSheet(
+          context: context,
+          builder: (context) => SizedBox(
               height: MediaQuery.of(context).size.height * 0.2,
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Text('Reserved until ${location.timestamp.toDate()}'),
-                    ElevatedButton(
-                        style: blueRounded,
-                        onPressed: () {
-                          //TODO: Confirmation pop up
-                          showDialog(
-                              context: context,
-                              builder: (BuildContext context) =>
-                                  _buildConfirmDeparture(context, location));
-                          Navigator.of(context).pop(context);
-                        },
-                        child: Text('Indicate Departure')),
-                    ElevatedButton(
-                        style: blueRounded,
-                        onPressed: () {
-                          if (!location.isReserved) {
-                            _selectDateAndTime(location.geoPoint.toLatLng(),
-                                location.timestamp.toDate(), true);
-                          } else {
-                            null;
-                          }
-                        },
-                        child: Text('Extend Reservation')),
-                  ]),
-            ));
+              child: notReserved));
+    } else {
+      showModalBottomSheet(
+          context: context,
+          builder: (context) => SizedBox(
+              height: MediaQuery.of(context).size.height * 0.2,
+              child: reserved));
+    }
   }
 
   void showOthersMarkerMenu(Location location) {
-    showModalBottomSheet(
-        context: context,
-        builder: (context) => SizedBox(
-              height: MediaQuery.of(context).size.height * 0.2,
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Text('Reserved until ${location.timestamp.toDate()}'),
-                    ElevatedButton(
-                        style: blueRounded,
-                        onPressed: () {
-                          if (!location.isReserved) {
-                            _selectDateAndTime(location.geoPoint.toLatLng(),
-                                location.timestamp.toDate(), true);
-                          } else {
-                            null;
-                          }
-                        },
-                        child: const Text('Reserve spot'))
-                  ]),
-            ));
+    Column notReserved =
+        Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Text('Reserved until ${location.timestamp.toDate()}'),
+          Text('Next reservation: ${location.nextTimestamp?.toDate()}')
+        ],
+      ),
+      ElevatedButton(
+          style: blueRounded,
+          onPressed: () {
+            if (location.nextOwnerEmail == null) {
+              updateLocation(location, location.timestamp.toDate());
+            } else {
+              null;
+            }
+          },
+          child: const Text('Reserve spot'))
+    ]);
+
+    Column reserved = Column(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Text('Reserved until ${location.timestamp.toDate()}'),
+        Text('Next reservation: ${location.nextTimestamp?.toDate()}')
+      ],
+    );
+    if (location.nextOwnerEmail != null) {
+      showModalBottomSheet(
+          context: context,
+          builder: (context) => SizedBox(
+                height: MediaQuery.of(context).size.height * 0.2,
+                child: reserved,
+              ));
+    } else {
+      showModalBottomSheet(
+          context: context,
+          builder: (context) => SizedBox(
+                height: MediaQuery.of(context).size.height * 0.2,
+                child: notReserved,
+              ));
+    }
   }
 
   List<Marker> _markersList(AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
     List<Marker> markers = [];
-    List<Location> locations = getLocations(snapshot);
+    List<Location> locations = [];
+    locations = getLocations(snapshot);
+    List<LatLng> geoPoints = markers.map((e) {
+      return e.point;
+    }).toList();
+    _removeExpiredLocations(snapshot);
     for (var location in locations) {
       if (location.timestamp
           .toDate()
           .isBefore(DateTime.now().add(const Duration(minutes: 30)))) {
         //TODO: change marker color om time
       }
+
       if (location.ownerEmail == globalSessionData.userEmail) {
         markers.add(Marker(
             point: location.geoPoint.toLatLng(),
@@ -255,6 +375,39 @@ class _MapPageState extends State<MapPage> {
               return GestureDetector(
                 onTap: () {
                   showOwnMarkerMenu(location);
+                },
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  size: 42,
+                  color: Colors.purple,
+                ),
+              );
+            }));
+      } else if (location.nextOwnerEmail == null &&
+          location.timestamp
+              .toDate()
+              .isBefore(DateTime.now().add(const Duration(minutes: 15)))) {
+        markers.add(Marker(
+            point: location.geoPoint.toLatLng(),
+            builder: (context) {
+              return GestureDetector(
+                onTap: () {
+                  showOthersMarkerMenu(location);
+                },
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  size: 42,
+                  color: Colors.yellow,
+                ),
+              );
+            }));
+      } else if (location.nextOwnerEmail == null) {
+        markers.add(Marker(
+            point: location.geoPoint.toLatLng(),
+            builder: (context) {
+              return GestureDetector(
+                onTap: () {
+                  showOthersMarkerMenu(location);
                 },
                 child: const Icon(
                   Icons.location_on_rounded,
@@ -274,7 +427,7 @@ class _MapPageState extends State<MapPage> {
                 child: const Icon(
                   Icons.location_on_rounded,
                   size: 42,
-                  color: Colors.blue,
+                  color: Colors.red,
                 ),
               );
             }));
@@ -290,7 +443,6 @@ class _MapPageState extends State<MapPage> {
       body: FlutterMap(
         mapController: MapController(),
         options: MapOptions(
-          onMapReady: () {},
           minZoom: 18,
           maxZoom: 18,
           maxBounds: LatLngBounds(
