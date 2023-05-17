@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
 import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:easypark_app/ui/pages/login/registerpage.dart';
@@ -55,8 +58,11 @@ class _loginPageState extends State<loginPage> {
     print('email: ' + emailController.text);
     print('Password: ' + passwordController.text);
 
+    var bytesToHash = utf8.encode(passwordController.text);
+    var sha256Digest = sha256.convert(bytesToHash);
+
     bool userExists =
-        await isUserPresent(emailController.text, passwordController.text);
+        await isUserPresent(emailController.text, sha256Digest.toString());
     if (userExists) {
       print("User exists!");
       globalSessionData.userEmail = emailController.text;
