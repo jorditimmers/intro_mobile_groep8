@@ -1,13 +1,12 @@
-import 'dart:html';
-
 import 'package:easypark_app/extensions/geopoint_extensions.dart';
 import 'package:easypark_app/global/global.dart';
 import 'package:easypark_app/model/location.dart';
-import 'package:easypark_app/services/LocationService.dart';
+import 'package:easypark_app/services/location_service.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map/plugin_api.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -15,10 +14,10 @@ class MapPage extends StatefulWidget {
   const MapPage({Key? key}) : super(key: key);
 
   @override
-  _MapPageState createState() => _MapPageState();
+  MapPageState createState() => MapPageState();
 }
 
-class _MapPageState extends State<MapPage> {
+class MapPageState extends State<MapPage> {
   late final LocationService _service;
   late Stream<QuerySnapshot<Object?>>? _locationsStream;
   @override
@@ -28,32 +27,30 @@ class _MapPageState extends State<MapPage> {
     _locationsStream = _service.getLocationsStream();
   }
 
-  ButtonStyle blueRounded = ElevatedButton.styleFrom(
-    disabledBackgroundColor: Colors.white24,
-    foregroundColor: Colors.white,
-    backgroundColor: Colors.blue,
-    shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(5))),
-  );
+  ButtonStyle _blueRounded(BuildContext context) => ElevatedButton.styleFrom(
+        minimumSize: Size(MediaQuery.of(context).size.width * 0.25,
+            MediaQuery.of(context).size.height * 0.05),
+        disabledBackgroundColor: Colors.white24,
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.blue,
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(5))),
+      );
 
-  ButtonStyle grayRounded = ElevatedButton.styleFrom(
-    foregroundColor: Colors.white60,
-    backgroundColor: Colors.black45,
-    shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(5))),
-  );
+  ButtonStyle _grayRounded(BuildContext context) => ElevatedButton.styleFrom(
+        minimumSize: Size(MediaQuery.of(context).size.width * 0.25,
+            MediaQuery.of(context).size.height * 0.05),
+        foregroundColor: Colors.white60,
+        backgroundColor: Colors.black45,
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(5))),
+      );
 
   void _removeExpiredLocations(AsyncSnapshot<QuerySnapshot<Object?>> snapshot) {
     for (var doc in snapshot.data!.docs) {
       Location l = Location.fromJson(doc.data() as Map<String, dynamic>);
       if (l.timestamp.toDate().isBefore(DateTime.now())) {
-        if (l.nextTimestamp == null) {
-          _service.deleteLocation(doc.id);
-        } else {
-          _service.deleteLocation(doc.id);
-          Location newLocation = updateLocationToNextReservation(l);
-          _service.addLocation(newLocation);
-        }
+        _service.deleteLocation(doc.id);
       }
     }
   }
@@ -75,43 +72,21 @@ class _MapPageState extends State<MapPage> {
         },
       );
 
-  Location updateLocationToNextReservation(Location l) {
-    if (l.nextTimestamp != null) {
-      return Location(l.geoPoint, l.nextOwnerEmail as String,
-          l.nextTimestamp as Timestamp, null, null);
-    } else {
-      return l;
+  Location setSpotReserved(Location l) {
+    if (!l.isReserved) {
+      l.isReserved = true;
     }
+    return l;
   }
 
   Future<DateTime?> _selectDate(DateTime start) async {
     final DateTime? date = await showDatePicker(
+        initialEntryMode: DatePickerEntryMode.input,
         context: context,
         initialDate: start,
         firstDate: start,
         lastDate: DateTime.now().add(Duration(days: 1)));
     return date;
-  }
-
-  Widget _buildConfirmDeparture(BuildContext context, Location location) {
-    return AlertDialog(
-      title: const Text('Confirm Departure'),
-      content: const Text('Are you sure you want to leave your spot?'),
-      actions: [
-        ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('close')),
-        ElevatedButton(
-            onPressed: () {
-              //TODO: remove marker
-              //removeMarkerFromDatabase(location);
-              Navigator.of(context).pop();
-            },
-            child: Text('Confirm departure'))
-      ],
-    );
   }
 
   Future<TimeOfDay?> _selectTime() async {
@@ -120,17 +95,17 @@ class _MapPageState extends State<MapPage> {
       confirmText: 'Confirm your reservation',
       context: context,
       initialTime: TimeOfDay.now(),
-      initialEntryMode: TimePickerEntryMode.dial,
+      initialEntryMode: TimePickerEntryMode.inputOnly,
     );
     return newTime;
   }
 
-  Location positionToLocation(LatLng pos, DateTime time) {
+  Location _positionToLocation(LatLng pos, DateTime time) {
     return Location(
         GeoPoint(pos.latitude, pos.longitude),
         globalSessionData.userEmail as String,
         Timestamp.fromDate(time),
-        null,
+        false,
         null);
   }
 
@@ -143,29 +118,20 @@ class _MapPageState extends State<MapPage> {
     if (date != null && time != null) {
       DateTime newDate =
           DateTime(date.year, date.month, date.day, time.hour, time.minute);
-      _service.addLocation(positionToLocation(pos, newDate));
+      _service.addLocation(_positionToLocation(pos, newDate));
     }
   }
 
-  void updateLocation(DocumentSnapshot doc, DateTime start) async {
-    Location l = docToLocation(doc);
-    DateTime? date = await _selectDate(start);
+  Future<DateTime?> selectDateTime() async {
+    DateTime? date = await _selectDate(DateTime.now());
     TimeOfDay? time;
     if (date != null) {
       time = await _selectTime();
     }
     if (date != null && time != null) {
-      DateTime newDate =
-          DateTime(date.year, date.month, date.day, time.hour, time.minute);
-      if (!newDate.isBefore(start)) {
-        _service.deleteLocation(doc.id);
-        l.nextOwnerEmail = globalSessionData.userEmail;
-        l.nextTimestamp = Timestamp.fromDate(newDate);
-        _service.addLocation(l);
-      }
-    } else {
-      return;
+      return DateTime(date.year, date.month, date.day, time.hour, time.minute);
     }
+    return null;
   }
 
   Location docToLocation(DocumentSnapshot doc) {
@@ -190,7 +156,7 @@ class _MapPageState extends State<MapPage> {
                   children: [
                     SizedBox(
                       child: ElevatedButton(
-                          style: blueRounded,
+                          style: _blueRounded(context),
                           child: const Text('Reserve'),
                           onPressed: () {
                             Navigator.pop(context);
@@ -199,7 +165,7 @@ class _MapPageState extends State<MapPage> {
                     ),
                     SizedBox(
                       child: ElevatedButton(
-                          style: grayRounded,
+                          style: _grayRounded(context),
                           child: const Text('Cancel'),
                           onPressed: () {
                             Navigator.pop(context);
@@ -211,109 +177,102 @@ class _MapPageState extends State<MapPage> {
         }).whenComplete(() => {});
   }
 
-  void _indicateDepartue() {}
+  String _formatDateTime(DateTime d) {
+    if (d.day == DateTime.now().day) {
+      return DateFormat('HH:mm').format(d);
+    } else {
+      return '${DateFormat('HH:mm').format(d)} tomorrow';
+    }
+  }
+
+  void _confirmDeparture(DocumentSnapshot doc) {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Confirm Departure'),
+            content: const Text('Are you sure you want to leave your spot?'),
+            actions: [
+              ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(context);
+                  },
+                  child: const Text('Cancel departure')),
+              ElevatedButton(
+                  onPressed: () {
+                    _service.deleteLocation(doc.id);
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(context);
+                  },
+                  child: const Text('Confirm departure'))
+            ],
+          );
+        });
+  }
 
   void showOwnMarkerMenu(DocumentSnapshot doc) {
     Location location = docToLocation(doc);
-    Column firstReserved =
+    Column reserved =
         Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Text('This spot is reserved until ${location.timestamp.toDate()}'),
-          Text('Next reservation: ${location.nextTimestamp?.toDate()}')
-        ],
-      ),
-      ElevatedButton(
-          style: blueRounded,
-          onPressed: () {
-            _service.deleteLocation(doc.id);
-            Location newLocation = updateLocationToNextReservation(location);
-            _service.addLocation(newLocation);
-            Navigator.of(context).pop(context);
-          },
-          child: Text('Cancel reservation')),
-    ]);
-    Column bothReserved =
-        Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Text('This spot is reserved until ${location.timestamp.toDate()}'),
           Text(
-              'Reservation extended until: ${location.nextTimestamp?.toDate()}')
+              'You reserved this spot until ${_formatDateTime(location.timestamp.toDate())}'),
         ],
       ),
       ElevatedButton(
-          style: blueRounded,
+          style: _blueRounded(context),
           onPressed: () {
-            _service.deleteLocation(doc.id);
-            Location newLocation = updateLocationToNextReservation(location);
-            _service.addLocation(newLocation);
-            Navigator.of(context).pop(context);
+            _confirmDeparture(doc);
           },
-          child: Text('Cancel current reservation')),
-      ElevatedButton(
-          style: blueRounded,
-          onPressed: () {
-            _service.deleteLocation(doc.id);
-            Location newLocation = positionToLocation(
-                location.geoPoint.toLatLng(), location.timestamp.toDate());
-            _service.addLocation(newLocation);
-            Navigator.of(context).pop(context);
-          },
-          child: Text('Cancel next reservation'))
+          child: const Text('Depart')),
     ]);
+
     Column notReserved =
         Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Text('This spot is reserved until ${location.timestamp.toDate()}'),
-          Text('Next reservation: ${location.nextTimestamp?.toDate()}')
+          Text(
+              'You reserved this spot until ${_formatDateTime(location.timestamp.toDate())}'),
         ],
       ),
-      ElevatedButton(
-          style: blueRounded,
-          onPressed: () {
-            if (location.nextOwnerEmail == null) {
-              _service.deleteLocation(doc.id);
-            } else {
-              updateLocationToNextReservation(location);
-            }
-            Navigator.of(context).pop(context);
-          },
-          child: Text('Indicate Departure')),
-      ElevatedButton(
-          style: blueRounded,
-          onPressed: () {
-            if (location.nextOwnerEmail == null) {
-              Navigator.of(context).pop();
-              updateLocation(doc, location.timestamp.toDate());
-            } else {
-              null;
-            }
-          },
-          child: Text('Extend Reservation')),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton(
+              style: _blueRounded(context),
+              onPressed: () {
+                _confirmDeparture(doc);
+              },
+              child: const Text('Depart')),
+          ElevatedButton(
+              style: _blueRounded(context),
+              onPressed: () async {
+                DateTime? newTime = await selectDateTime();
+                if (newTime != null) {
+                  _service.setLocationTime(doc.id, newTime);
+                }
+                Navigator.of(context).pop(context);
+              },
+              child: const Text('Extend Reservation')),
+        ],
+      )
     ]);
-    if (location.nextOwnerEmail == null) {
+    if (location.isReserved) {
       showModalBottomSheet(
           context: context,
           builder: (context) => SizedBox(
               height: MediaQuery.of(context).size.height * 0.2,
-              child: notReserved));
-    } else if (location.nextOwnerEmail == globalSessionData.userEmail) {
-      showModalBottomSheet(
-          context: context,
-          builder: (context) => SizedBox(
-              height: MediaQuery.of(context).size.height * 0.2,
-              child: bothReserved));
+              child: reserved));
     } else {
       showModalBottomSheet(
           context: context,
           builder: (context) => SizedBox(
               height: MediaQuery.of(context).size.height * 0.2,
-              child: firstReserved));
+              child: notReserved));
     }
   }
 
@@ -324,62 +283,66 @@ class _MapPageState extends State<MapPage> {
       Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Text('Reserved until ${location.timestamp.toDate()}'),
-          Text('Next reservation: ${location.nextTimestamp?.toDate()}')
+          Text(
+              'Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
         ],
       ),
       ElevatedButton(
-          style: blueRounded,
+          style: _blueRounded(context),
           onPressed: () {
-            if (location.nextOwnerEmail == null) {
+            if (!location.isReserved) {
               Navigator.of(context).pop();
-              updateLocation(doc, location.timestamp.toDate());
+              _service.setLocationReserved(doc.id, true);
             } else {
               null;
             }
           },
-          child: const Text('Reserve spot'))
+          child: const Text('Reserve this location'))
     ]);
 
+//Reserved
     Column reserved = Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Text('Reserved until ${location.timestamp.toDate()}'),
-        Text('Next reservation: ${location.nextTimestamp?.toDate()}')
+        Text('Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
       ],
     );
-
-    Column userReserved = Column(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        Text('Reserved until ${location.timestamp.toDate()}'),
-        Text('Your reservation: ${location.nextTimestamp?.toDate()}'),
-        ElevatedButton(
-            style: blueRounded,
-            onPressed: () {
-              _service.deleteLocation(doc.id);
-              Location newLocation = location;
-              newLocation.nextOwnerEmail = null;
-              newLocation.nextTimestamp = null;
-              _service.addLocation(newLocation);
-              Navigator.of(context).pop(context);
-            },
-            child: const Text('Cancel reservation'))
-      ],
-    );
-    if (location.nextOwnerEmail == null) {
+    //ReservedByUser
+    Column reservedByUser =
+        Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Text(
+              'Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+        ],
+      ),
+      ElevatedButton(
+          style: _blueRounded(context),
+          onPressed: () {
+            if (location.isReserved) {
+              Navigator.of(context).pop();
+              _service.setLocationReserved(doc.id, false);
+            } else {
+              null;
+            }
+          },
+          child: const Text('Cancel Reservation'))
+    ]);
+    if (!location.isReserved) {
       showModalBottomSheet(
           context: context,
           builder: (context) => SizedBox(
                 height: MediaQuery.of(context).size.height * 0.2,
                 child: notReserved,
               ));
-    } else if (location.nextOwnerEmail == globalSessionData.userEmail) {
+    } else if (location.isReserved &&
+        location.nextMail == globalSessionData.userEmail) {
       showModalBottomSheet(
           context: context,
           builder: (context) => SizedBox(
                 height: MediaQuery.of(context).size.height * 0.2,
-                child: userReserved,
+                child: reservedByUser,
               ));
     } else {
       showModalBottomSheet(
@@ -393,9 +356,13 @@ class _MapPageState extends State<MapPage> {
 
   List<Marker> _markersList(AsyncSnapshot<QuerySnapshot> snapshot) {
     List<Marker> markers = [];
-    _removeExpiredLocations(snapshot);
+    //_removeExpiredLocations(snapshot);
     for (var doc in snapshot.data!.docs) {
       Location location = docToLocation(doc);
+      if (location.timestamp.toDate().isBefore(DateTime.now())) {
+        markers.removeWhere(
+            (marker) => marker.point == location.geoPoint.toLatLng());
+      }
       if (location.ownerEmail == globalSessionData.userEmail) {
         markers.add(Marker(
             point: location.geoPoint.toLatLng(),
@@ -411,7 +378,7 @@ class _MapPageState extends State<MapPage> {
                 ),
               );
             }));
-      } else if (location.nextOwnerEmail == null &&
+      } else if (!location.isReserved &&
           location.timestamp
               .toDate()
               .isBefore(DateTime.now().add(const Duration(minutes: 15)))) {
@@ -429,7 +396,7 @@ class _MapPageState extends State<MapPage> {
                 ),
               );
             }));
-      } else if (location.nextOwnerEmail == null) {
+      } else if (!location.isReserved) {
         markers.add(Marker(
             point: location.geoPoint.toLatLng(),
             builder: (context) {
