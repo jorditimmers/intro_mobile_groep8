@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../model/location.dart';
@@ -45,5 +46,17 @@ class LocationService {
       final data = doc.data() as Map<String, dynamic>;
       return Location.fromJson(data);
     }).toList();
+  }
+
+  Future<void> setLocationTime(String locationId, DateTime newTime) {
+    return locationsRef.doc(locationId).update({'Time': newTime});
+  }
+
+  Future<void> setLocationReserved(String locationId, bool b) {
+    return locationsRef.doc(locationId).update({'IsReserved': b});
+  }
+
+  Future<void> setLocationNextMail(String locationId, String nextMail) {
+    return locationsRef.doc(locationId).update({'NextMail': nextMail});
   }
 }
