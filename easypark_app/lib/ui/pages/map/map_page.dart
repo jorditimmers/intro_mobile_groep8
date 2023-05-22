@@ -1,8 +1,10 @@
 import 'package:easypark_app/extensions/geopoint_extensions.dart';
 import 'package:easypark_app/global/global.dart';
+import 'package:easypark_app/model/car.dart';
 import 'package:easypark_app/model/location.dart';
 import 'package:easypark_app/services/location_service.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
+import 'package:easypark_app/ui/pages/settings/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map/plugin_api.dart';
@@ -100,16 +102,20 @@ class MapPageState extends State<MapPage> {
     return newTime;
   }
 
-  Location _positionToLocation(LatLng pos, DateTime time) {
+  Location _positionToLocation(
+      LatLng pos, DateTime time, DocumentReference carid) {
     return Location(
         GeoPoint(pos.latitude, pos.longitude),
         globalSessionData.userEmail as String,
         Timestamp.fromDate(time),
+        carid,
         false,
         null);
   }
 
   void createNewLocation(LatLng pos) async {
+    DocumentReference? car = await _showCarSelection();
+    if (car == null) return;
     DateTime? date = await _selectDate(DateTime.now());
     TimeOfDay? time;
     if (date != null) {
@@ -118,8 +124,14 @@ class MapPageState extends State<MapPage> {
     if (date != null && time != null) {
       DateTime newDate =
           DateTime(date.year, date.month, date.day, time.hour, time.minute);
-      _service.addLocation(_positionToLocation(pos, newDate));
+      _service.addLocation(_positionToLocation(pos, newDate, car));
     }
+  }
+
+  Future<Car> getCar(String id) async {
+    final car =
+        await FirebaseFirestore.instance.collection('Cars').doc(id).get();
+    return Car.fromJson(car.data() as Map<String, dynamic>);
   }
 
   Future<DateTime?> selectDateTime() async {
@@ -136,6 +148,20 @@ class MapPageState extends State<MapPage> {
 
   Location docToLocation(DocumentSnapshot doc) {
     return Location.fromJson(doc.data() as Map<String, dynamic>);
+  }
+
+  Future<DocumentReference?> _showCarSelection() async {
+    List<DocumentReference> carIds =
+        await getCarDocs(globalSessionData.userEmail as String);
+    List<Car> cars = await getCars(globalSessionData.userEmail as String);
+
+    DocumentReference? carRef =
+        await showCarSelectionDialog(context, carIds, cars);
+
+    if (carRef != null) {
+      return carRef;
+    }
+    return null;
   }
 
   void reserveMenu(LatLng latlng, DateTime startTime) {
@@ -185,6 +211,78 @@ class MapPageState extends State<MapPage> {
     }
   }
 
+  Future<List<DocumentReference>> getCarDocs(String mail) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('Cars')
+        .where('OwnerEmail', isEqualTo: mail)
+        .get();
+
+    List<DocumentReference> refs = doc.docs.map((d) => d.reference).toList();
+    return refs;
+  }
+
+  Future<List<Car>> getCars(String mail) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('Cars')
+        .where('OwnerEmail', isEqualTo: mail)
+        .get();
+
+    List<Car> cars = doc.docs.map((d) => Car.fromJson(d.data())).toList();
+    return cars;
+  }
+
+  Future<DocumentReference?> showCarSelectionDialog(BuildContext context,
+      List<DocumentReference?> carIds, List<Car> cars) async {
+    DocumentReference? selectedCar;
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        if (cars.isEmpty) {
+          return AlertDialog(
+            title: Text('Select a Car'),
+            content: Text('No cars available. Add a car?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SettingsPage()),
+                  );
+                },
+                child: Text('Add Car'),
+              ),
+            ],
+          );
+        } else {
+          return AlertDialog(
+            title: const Text('Select a Car'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: cars.length,
+                itemBuilder: (BuildContext context, int i) {
+                  return ListTile(
+                    title: Text("${cars[i].Brand} ${cars[i].Model}"),
+                    subtitle: Text(cars[i].Color),
+                    onTap: () {
+                      selectedCar = carIds[i] as DocumentReference<Object?>;
+                      Navigator.of(context).pop();
+                    },
+                  );
+                },
+              ),
+            ),
+          );
+        }
+      },
+    );
+
+    return selectedCar;
+  }
+
   void _confirmDeparture(DocumentSnapshot doc) {
     showDialog(
         context: context,
@@ -211,8 +309,26 @@ class MapPageState extends State<MapPage> {
         });
   }
 
-  void showOwnMarkerMenu(DocumentSnapshot doc) {
+  Widget _carText(Car car) => Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.directions_car,
+                color: Colors.blue,
+              ),
+              Text(' ${car.Brand} ${car.Model}'),
+            ],
+          ),
+          Text('Color:  ${car.Color}')
+        ],
+      );
+
+  void showOwnMarkerMenu(DocumentSnapshot doc) async {
     Location location = docToLocation(doc);
+    Car car = await getCar(location.carRef.id);
     Column reserved =
         Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Column(
@@ -220,6 +336,7 @@ class MapPageState extends State<MapPage> {
         children: [
           Text(
               'You reserved this spot until ${_formatDateTime(location.timestamp.toDate())}'),
+          _carText(car),
         ],
       ),
       ElevatedButton(
@@ -237,6 +354,7 @@ class MapPageState extends State<MapPage> {
         children: [
           Text(
               'You reserved this spot until ${_formatDateTime(location.timestamp.toDate())}'),
+          _carText(car),
         ],
       ),
       Row(
@@ -276,8 +394,9 @@ class MapPageState extends State<MapPage> {
     }
   }
 
-  void showOthersMarkerMenu(DocumentSnapshot doc) {
+  void showOthersMarkerMenu(DocumentSnapshot doc) async {
     Location location = docToLocation(doc);
+    Car car = await getCar(location.carRef.id);
     Column notReserved =
         Column(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       Column(
@@ -285,6 +404,7 @@ class MapPageState extends State<MapPage> {
         children: [
           Text(
               'Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+          _carText(car),
         ],
       ),
       ElevatedButton(
@@ -305,6 +425,7 @@ class MapPageState extends State<MapPage> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Text('Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+        _carText(car),
       ],
     );
     //ReservedByUser
@@ -315,6 +436,7 @@ class MapPageState extends State<MapPage> {
         children: [
           Text(
               'Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+          _carText(car),
         ],
       ),
       ElevatedButton(
@@ -356,14 +478,15 @@ class MapPageState extends State<MapPage> {
 
   List<Marker> _markersList(AsyncSnapshot<QuerySnapshot> snapshot) {
     List<Marker> markers = [];
-    //_removeExpiredLocations(snapshot);
+    _removeExpiredLocations(snapshot);
     for (var doc in snapshot.data!.docs) {
       Location location = docToLocation(doc);
       if (location.timestamp.toDate().isBefore(DateTime.now())) {
         markers.removeWhere(
             (marker) => marker.point == location.geoPoint.toLatLng());
       }
-      if (location.ownerEmail == globalSessionData.userEmail) {
+      if (location.ownerEmail == globalSessionData.userEmail ||
+          location.nextMail == globalSessionData.userEmail) {
         markers.add(Marker(
             point: location.geoPoint.toLatLng(),
             builder: (context) {
