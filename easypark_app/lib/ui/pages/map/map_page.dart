@@ -403,7 +403,7 @@ class MapPageState extends State<MapPage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Text(
-              'Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+              'This spot is eserved until ${_formatDateTime(location.timestamp.toDate())}'),
           _carText(car),
         ],
       ),
@@ -424,7 +424,8 @@ class MapPageState extends State<MapPage> {
     Column reserved = Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Text('Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+        Text(
+            'This spot is reserved until ${_formatDateTime(location.timestamp.toDate())}'),
         _carText(car),
       ],
     );
@@ -435,7 +436,7 @@ class MapPageState extends State<MapPage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Text(
-              'Reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+              'This spot is reserved until ${_formatDateTime(location.timestamp.toDate())}'),
           _carText(car),
         ],
       ),
@@ -485,14 +486,28 @@ class MapPageState extends State<MapPage> {
         markers.removeWhere(
             (marker) => marker.point == location.geoPoint.toLatLng());
       }
-      if (location.ownerEmail == globalSessionData.userEmail ||
-          location.nextMail == globalSessionData.userEmail) {
+      if (location.ownerEmail == globalSessionData.userEmail) {
         markers.add(Marker(
             point: location.geoPoint.toLatLng(),
             builder: (context) {
               return GestureDetector(
                 onTap: () {
                   showOwnMarkerMenu(doc);
+                },
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  size: 42,
+                  color: Colors.purple,
+                ),
+              );
+            }));
+      } else if (location.nextMail == globalSessionData.userEmail) {
+        markers.add(Marker(
+            point: location.geoPoint.toLatLng(),
+            builder: (context) {
+              return GestureDetector(
+                onTap: () {
+                  showOthersMarkerMenu(doc);
                 },
                 child: const Icon(
                   Icons.location_on_rounded,
