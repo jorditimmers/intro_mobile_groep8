@@ -55,7 +55,7 @@ class LocationService {
     return locationsRef.doc(locationId).update({'IsReserved': b});
   }
 
-  Future<void> setLocationNextMail(String locationId, String nextMail) {
+  Future<void> setLocationNextMail(String locationId, String? nextMail) {
     return locationsRef.doc(locationId).update({'NextMail': nextMail});
   }
 }
