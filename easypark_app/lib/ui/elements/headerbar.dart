@@ -1,14 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/strings.dart';
+import 'package:easypark_app/ui/pages/account/account.dart';
+import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:easypark_app/ui/pages/settings/settings.dart';
 import 'package:flutter/material.dart';
 
 headerBar(BuildContext context) => AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      title: Text(
-        title,
-        style: const TextStyle(fontFamily: 'SF_Pro', fontSize: 30),
+      title: GestureDetector(
+        onTap: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => HomePage(
+                      title: 'EasyPark',
+                    )),
+          );
+        },
+        child: Text(
+          title,
+          style: const TextStyle(fontFamily: 'SF_Pro', fontSize: 30),
+        ),
       ),
       foregroundColor: Colors.blue,
       leading: IconButton(
@@ -26,7 +39,10 @@ headerBar(BuildContext context) => AppBar(
       actions: [
         IconButton(
             onPressed: () {
-              //OPEN ACCOUNT SETTINGS HERE
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AccountPage()),
+              ); //OPEN ACCOUNT SETTINGS HERE
             },
             icon: Icon(Icons.account_circle_outlined))
       ],

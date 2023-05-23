@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:easypark_app/model/user.dart';
 import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:flutter/material.dart';
@@ -238,12 +241,15 @@ class _registerPageState extends State<registerPage> {
     print('Password: ' + passwordController.text);
     print('Repeated Password: ' + repeatPasswordController.text);
 
+    var bytesToHash = utf8.encode(passwordController.text);
+    var sha256Digest = sha256.convert(bytesToHash);
+
     final docUser = FirebaseFirestore.instance
         .collection('Users')
         .doc(emailController.text);
 
     final User newUser = User(
-        emailController.text, passwordController.text, usernameController.text);
+        emailController.text, sha256Digest.toString(), usernameController.text);
 
     final json = newUser.toJson();
 
