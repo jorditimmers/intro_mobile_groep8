@@ -151,9 +151,13 @@ class MapPageState extends State<MapPage> {
   }
 
   Future<DocumentReference?> _showCarSelection() async {
+    QuerySnapshot snapshot =
+        await getCarSnapshot(globalSessionData.userEmail as String);
     List<DocumentReference> carIds =
-        await getCarDocs(globalSessionData.userEmail as String);
-    List<Car> cars = await getCars(globalSessionData.userEmail as String);
+        snapshot.docs.map((d) => d.reference).toList();
+    List<Car> cars = snapshot.docs
+        .map((d) => Car.fromJson(d.data() as Map<String, dynamic>))
+        .toList();
 
     DocumentReference? carRef =
         await showCarSelectionDialog(context, carIds, cars);
@@ -211,24 +215,11 @@ class MapPageState extends State<MapPage> {
     }
   }
 
-  Future<List<DocumentReference>> getCarDocs(String mail) async {
-    final doc = await FirebaseFirestore.instance
+  Future<QuerySnapshot> getCarSnapshot(String mail) async {
+    return await FirebaseFirestore.instance
         .collection('Cars')
         .where('OwnerEmail', isEqualTo: mail)
         .get();
-
-    List<DocumentReference> refs = doc.docs.map((d) => d.reference).toList();
-    return refs;
-  }
-
-  Future<List<Car>> getCars(String mail) async {
-    final doc = await FirebaseFirestore.instance
-        .collection('Cars')
-        .where('OwnerEmail', isEqualTo: mail)
-        .get();
-
-    List<Car> cars = doc.docs.map((d) => Car.fromJson(d.data())).toList();
-    return cars;
   }
 
   Future<DocumentReference?> showCarSelectionDialog(BuildContext context,
@@ -403,7 +394,7 @@ class MapPageState extends State<MapPage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Text(
-              'This spot is eserved until ${_formatDateTime(location.timestamp.toDate())}'),
+              'This spot is free at ${_formatDateTime(location.timestamp.toDate())}'),
           _carText(car),
         ],
       ),
@@ -413,6 +404,8 @@ class MapPageState extends State<MapPage> {
             if (!location.isReserved) {
               Navigator.of(context).pop();
               _service.setLocationReserved(doc.id, true);
+              _service.setLocationNextMail(
+                  doc.id, globalSessionData.userEmail as String);
             } else {
               null;
             }
@@ -425,7 +418,7 @@ class MapPageState extends State<MapPage> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Text(
-            'This spot is reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+            'This spot is free at ${_formatDateTime(location.timestamp.toDate())}'),
         _carText(car),
       ],
     );
@@ -436,7 +429,7 @@ class MapPageState extends State<MapPage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Text(
-              'This spot is reserved until ${_formatDateTime(location.timestamp.toDate())}'),
+              'This spot is free for you at ${_formatDateTime(location.timestamp.toDate())}'),
           _carText(car),
         ],
       ),
@@ -446,6 +439,7 @@ class MapPageState extends State<MapPage> {
             if (location.isReserved) {
               Navigator.of(context).pop();
               _service.setLocationReserved(doc.id, false);
+              _service.setLocationNextMail(doc.id, null);
             } else {
               null;
             }
