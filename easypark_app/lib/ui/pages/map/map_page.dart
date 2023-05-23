@@ -283,12 +283,14 @@ class MapPageState extends State<MapPage> {
             content: const Text('Are you sure you want to leave your spot?'),
             actions: [
               ElevatedButton(
+                  style: _blueRounded(context),
                   onPressed: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).pop(context);
                   },
                   child: const Text('Cancel departure')),
               ElevatedButton(
+                  style: _blueRounded(context),
                   onPressed: () {
                     _service.deleteLocation(doc.id);
                     Navigator.of(context).pop();
