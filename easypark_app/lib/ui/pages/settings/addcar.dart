@@ -18,7 +18,6 @@ class _addCarState extends State<addCar> {
   final BrandController = TextEditingController();
   final ModelController = TextEditingController();
   final ColorController = TextEditingController();
-  final PlateController = TextEditingController();
 
   Widget buildBrand() {
     return Column(
@@ -131,43 +130,6 @@ class _addCarState extends State<addCar> {
     );
   }
 
-  Widget buildPlate() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Plate',
-          style: TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'SF_Pro'),
-        ),
-        SizedBox(height: 10),
-        Container(
-          alignment: Alignment.centerLeft,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
-              ]),
-          height: 60,
-          child: TextField(
-            controller: PlateController,
-            style: TextStyle(color: Colors.black87),
-            decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.only(top: 14),
-                hintText: 'Plate',
-                hintStyle: TextStyle(color: Colors.black38)),
-          ),
-        )
-      ],
-    );
-  }
-
   Widget buildLoginButton() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 25),
@@ -197,20 +159,15 @@ class _addCarState extends State<addCar> {
     print('Brand: ' + BrandController.text);
     print('Model: ' + ModelController.text);
     print('Color: ' + ColorController.text);
-    print('Plate: ' + PlateController.text);
 
     final docUser = FirebaseFirestore.instance.collection('Cars').doc();
 
-    final Car newCar = Car(
-        BrandController.text,
-        ModelController.text,
-        ColorController.text,
-        PlateController.text,
-        globalSessionData.userEmail as String);
+    final Car newCar = Car(BrandController.text, ModelController.text,
+        ColorController.text, globalSessionData.userEmail as String);
 
     final json = newCar.toJson();
 
-    bool carExists = await isCarPresent(PlateController.text);
+    bool carExists = await isCarPresent(newCar);
 
     if (!carExists) {
       await docUser.set(json);
@@ -221,16 +178,17 @@ class _addCarState extends State<addCar> {
     BrandController.clear();
     ModelController.clear();
     ColorController.clear();
-    PlateController.clear();
 
     Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (context) => CarSettings()));
   }
 
-  Future<bool> isCarPresent(String Plate) async {
+  Future<bool> isCarPresent(Car car) async {
     final user = await FirebaseFirestore.instance
         .collection('Cars')
-        .where('Plate', isEqualTo: Plate)
+        .where('Model', isEqualTo: car.Model)
+        .where('Color', isEqualTo: car.Color)
+        .where('Brand', isEqualTo: car.Brand)
         .limit(1)
         .get();
     return user.docs.isNotEmpty;
@@ -296,8 +254,6 @@ class _addCarState extends State<addCar> {
             buildModel(),
             SizedBox(height: 20),
             buildColor(),
-            SizedBox(height: 20),
-            buildPlate(),
             SizedBox(height: 10),
             buildLoginButton(),
           ],

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/strings.dart';
 import 'package:easypark_app/ui/pages/account/account.dart';
-import 'package:easypark_app/ui/pages/home/homepage.dart';
+import 'package:easypark_app/ui/pages/map/map_page.dart';
 import 'package:easypark_app/ui/pages/settings/settings.dart';
 import 'package:flutter/material.dart';
 
@@ -12,10 +12,7 @@ headerBar(BuildContext context) => AppBar(
         onTap: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-                builder: (context) => HomePage(
-                      title: 'EasyPark',
-                    )),
+            MaterialPageRoute(builder: (context) => MapPage()),
           );
         },
         child: Text(

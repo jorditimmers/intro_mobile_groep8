@@ -7,7 +7,6 @@ import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 
 import '../../../global/global.dart';
-import '../home/homepage.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -303,7 +302,6 @@ class _AccountPageState extends State<AccountPage> {
                     buildNewPassword(),
                     SizedBox(height: 5),
                     buildSaveButton(),
-                    SizedBox(height: 5),
                     buildDeleteAccountButton(),
                   ],
                 ),
