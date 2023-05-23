@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
+import 'package:easypark_app/ui/pages/login/loginpage.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -120,6 +122,80 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
+  Widget buildDeleteAccountButton() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 25),
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ButtonStyle(
+            elevation: MaterialStateProperty.all(5),
+            backgroundColor: MaterialStateProperty.all(Colors.red),
+            shape: MaterialStateProperty.all(RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15))),
+            padding: MaterialStateProperty.all(EdgeInsets.all(25))),
+        onPressed: () => {showComfirmDialog(context)},
+        child: (Text(
+          'DELETE ACCOUNT',
+          style: (TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'SF_Pro')),
+        )),
+      ),
+    );
+  }
+
+  Future<void> deleteAccount() async {
+    final inst = await FirebaseFirestore.instance;
+    final col =
+        inst.collection('Users').doc(globalSessionData.userEmail).delete();
+
+    final col2 = inst
+        .collection('Cars')
+        .where('OwnerEmail', isEqualTo: globalSessionData.userEmail)
+        .get()
+        .then((snapshot) => {
+              for (var s in snapshot.docs) {s.reference.delete()}
+            });
+
+    final col3 = inst
+        .collection('Locations')
+        .where('OwnerEmail', isEqualTo: globalSessionData.userEmail)
+        .get()
+        .then((snapshot) => {
+              for (var s in snapshot.docs) {s.reference.delete()}
+            });
+
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => loginPage()));
+  }
+
+  showComfirmDialog(BuildContext context) {
+    // set up the button
+    Widget okButton = TextButton(
+      child: Text("YES"),
+      onPressed: () {
+        deleteAccount();
+      },
+    );
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text("Delete this account"),
+      content: Text("Are you sure you want to delete this account?"),
+      actions: [
+        okButton,
+      ],
+    );
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
   void showAlertDialog(BuildContext context) {
     // set up the button
     Widget okButton = TextButton(
@@ -227,6 +303,8 @@ class _AccountPageState extends State<AccountPage> {
                     buildNewPassword(),
                     SizedBox(height: 5),
                     buildSaveButton(),
+                    SizedBox(height: 5),
+                    buildDeleteAccountButton(),
                   ],
                 ),
               ),
