@@ -46,4 +46,16 @@ class LocationService {
       return Location.fromJson(data);
     }).toList();
   }
+
+  Future<void> setLocationTime(String locationId, DateTime newTime) {
+    return locationsRef.doc(locationId).update({'Time': newTime});
+  }
+
+  Future<void> setLocationReserved(String locationId, bool b) {
+    return locationsRef.doc(locationId).update({'IsReserved': b});
+  }
+
+  Future<void> setLocationNextMail(String locationId, String? nextMail) {
+    return locationsRef.doc(locationId).update({'NextMail': nextMail});
+  }
 }

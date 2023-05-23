@@ -1,15 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easypark_app/model/car.dart';
 import 'package:latlong2/latlong.dart';
 
 class Location {
   GeoPoint geoPoint;
   Timestamp timestamp;
   String ownerEmail;
-  Timestamp? nextTimestamp;
-  String? nextOwnerEmail;
+  DocumentReference carRef;
+  bool isReserved;
+  String? nextMail;
 
-  Location(this.geoPoint, this.ownerEmail, this.timestamp, this.nextTimestamp,
-      this.nextOwnerEmail);
+  Location(this.geoPoint, this.ownerEmail, this.timestamp, this.carRef,
+      this.isReserved, this.nextMail);
 
   String toString() => "Location<$geoPoint>";
 
@@ -20,18 +22,21 @@ class Location {
 
   static Location _locationFromJson(Map<String, dynamic> json) {
     return Location(
-        json['Location'] as GeoPoint,
-        json['OwnerEmail'] as String,
-        json['Time'] as Timestamp,
-        json['NextTimestamp'] as Timestamp?,
-        json['NextOwnerEmail'] as String?);
+      json['Location'] as GeoPoint,
+      json['OwnerEmail'] as String,
+      json['Time'] as Timestamp,
+      json['Car'] as DocumentReference,
+      json['IsReserved'] as bool,
+      json['NextMail'] as String?,
+    );
   }
 
   Map<String, dynamic> _locationToJson(Location instance) => <String, dynamic>{
         'Location': instance.geoPoint,
         'OwnerEmail': instance.ownerEmail,
         'Time': instance.timestamp,
-        'NextTimestamp': instance.nextTimestamp,
-        'NextOwnerEmail': instance.nextOwnerEmail
+        'Car': instance.carRef,
+        'IsReserved': instance.isReserved,
+        'NextMail': instance.nextMail,
       };
 }
