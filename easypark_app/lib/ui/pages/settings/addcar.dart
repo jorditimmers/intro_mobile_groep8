@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/model/car.dart';
+import 'package:easypark_app/ui/pages/settings/carsettings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -221,6 +222,9 @@ class _addCarState extends State<addCar> {
     ModelController.clear();
     ColorController.clear();
     PlateController.clear();
+
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => CarSettings()));
   }
 
   Future<bool> isCarPresent(String Plate) async {

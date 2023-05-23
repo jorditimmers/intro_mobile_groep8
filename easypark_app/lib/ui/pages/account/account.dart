@@ -15,48 +15,8 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  final emailController = TextEditingController();
   final newPasswordController = TextEditingController();
   final oldPasswordController = TextEditingController();
-
-  Widget buildEmail() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'E-Mail',
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'SF_Pro'),
-        ),
-        SizedBox(height: 10),
-        Container(
-          alignment: Alignment.centerLeft,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
-              ]),
-          height: 60,
-          child: TextField(
-            controller: emailController,
-            keyboardType: TextInputType.emailAddress,
-            style: TextStyle(color: Colors.black87),
-            decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.only(top: 14),
-                prefixIcon: Icon(Icons.email, color: Colors.blue),
-                hintText: 'E-Mail',
-                hintStyle: TextStyle(color: Colors.black38)),
-          ),
-        )
-      ],
-    );
-  }
 
   Widget buildOldPassword() {
     return Column(
@@ -189,16 +149,15 @@ class _AccountPageState extends State<AccountPage> {
 
   checkAndSave() async {
     //These are for debug reasons only
-    print('email: ' + emailController.text);
     print('Password: ' + oldPasswordController.text);
 
-    bool userExists =
-        await isUserPresent(emailController.text, oldPasswordController.text);
+    bool userExists = await isUserPresent(
+        globalSessionData.userEmail as String, oldPasswordController.text);
     if (userExists) {
       print("User correct!");
       FirebaseFirestore.instance
           .collection('Users')
-          .doc(emailController.text)
+          .doc(globalSessionData.userEmail)
           .update({'Password': newPasswordController.text});
     } else {
       print("Password and email do not match.");
@@ -217,12 +176,6 @@ class _AccountPageState extends State<AccountPage> {
         .limit(1)
         .get();
     return user.docs.isNotEmpty;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    emailController.text = globalSessionData.userEmail as String;
   }
 
   @override
@@ -251,8 +204,16 @@ class _AccountPageState extends State<AccountPage> {
             children: [
               Icon(
                 Icons.account_circle_rounded,
-                size: 400,
+                size: 200,
                 color: Colors.blue,
+              ),
+              Text(
+                globalSessionData.userEmail as String,
+                style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'SF_Pro'),
               ),
               SingleChildScrollView(
                 physics: AlwaysScrollableScrollPhysics(),
@@ -260,8 +221,6 @@ class _AccountPageState extends State<AccountPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    SizedBox(height: 5),
-                    buildEmail(),
                     SizedBox(height: 5),
                     buildOldPassword(),
                     SizedBox(height: 5),
