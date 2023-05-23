@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:easypark_app/ui/elements/headerbar.dart';
-import 'package:easypark_app/ui/pages/home/homepage.dart';
 import 'package:easypark_app/ui/pages/login/registerpage.dart';
+import 'package:easypark_app/ui/pages/map/map_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -68,10 +68,7 @@ class _loginPageState extends State<loginPage> {
       globalSessionData.userEmail = emailController.text;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-            builder: (context) => HomePage(
-                  title: 'EasyPark',
-                )),
+        MaterialPageRoute(builder: (context) => MapPage()),
       );
     } else {
       print("User does not exist.");

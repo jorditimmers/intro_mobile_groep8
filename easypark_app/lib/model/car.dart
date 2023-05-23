@@ -5,11 +5,10 @@ class Car {
   String Brand;
   String Model;
   String Color;
-  String Plate;
   String OwnerEmail;
 
   //Constructor
-  Car(this.Brand, this.Model, this.Color, this.Plate, this.OwnerEmail);
+  Car(this.Brand, this.Model, this.Color, this.OwnerEmail);
 
   //Factory constructor
   factory Car.fromJson(Map<String, dynamic> json) => _carFromJson(json);
@@ -23,12 +22,8 @@ class Car {
 
 // Json to User
 Car _carFromJson(Map<String, dynamic> json) {
-  return Car(
-      json['Brand'] as String,
-      json['Model'] as String,
-      json['Color'] as String,
-      json['Plate'] as String,
-      json['OwnerEmail'] as String);
+  return Car(json['Brand'] as String, json['Model'] as String,
+      json['Color'] as String, json['Plate'] as String);
 }
 
 // User to Json
@@ -36,6 +31,5 @@ Map<String, dynamic> _carToJson(Car instance) => <String, dynamic>{
       'Brand': instance.Brand,
       'Model': instance.Model,
       'Color': instance.Color,
-      'Plate': instance.Plate,
       'OwnerEmail': instance.OwnerEmail
     };

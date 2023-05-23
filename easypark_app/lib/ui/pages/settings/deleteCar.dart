@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easypark_app/global/global.dart';
 import 'package:easypark_app/model/car.dart';
 import 'package:easypark_app/ui/pages/settings/addcar.dart';
-import 'package:easypark_app/ui/pages/settings/deleteCar.dart';
+import 'package:easypark_app/ui/pages/settings/carsettings.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
@@ -10,14 +13,14 @@ import 'package:settings_ui/settings_ui.dart';
 
 import 'package:easypark_app/global/global.dart';
 
-class CarSettings extends StatefulWidget {
-  const CarSettings({super.key});
+class DeleteCar extends StatefulWidget {
+  const DeleteCar({super.key});
 
   @override
-  State<CarSettings> createState() => _CarSettingsState();
+  State<DeleteCar> createState() => _DeleteCarState();
 }
 
-class _CarSettingsState extends State<CarSettings> {
+class _DeleteCarState extends State<DeleteCar> {
   late Future<List<Car>> _data;
 
   @override
@@ -39,6 +42,33 @@ class _CarSettingsState extends State<CarSettings> {
 
     List<Car> _Cars = doc.docs.map((d) => Car.fromJson(d.data())).toList();
     return _Cars;
+  }
+
+  Future<void> deleteCar(Car car) async {
+    var ref;
+    final col = await FirebaseFirestore.instance
+        .collection('Cars')
+        .where('OwnerEmail', isEqualTo: globalSessionData.userEmail)
+        .where('Brand', isEqualTo: car.Brand)
+        .where('Color', isEqualTo: car.Color)
+        .where('Model', isEqualTo: car.Model)
+        .limit(1)
+        .get()
+        .then((snapshot) => {
+              ref = snapshot.docs[0].reference,
+              snapshot.docs[0].reference.delete()
+            });
+
+    final col2 = await FirebaseFirestore.instance
+        .collection('Locations')
+        .where('Car', isEqualTo: ref)
+        .get()
+        .then((snapshot) => {
+              for (var s in snapshot.docs) {s.reference.delete()}
+            });
+
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => CarSettings()));
   }
 
   @override
@@ -64,39 +94,6 @@ class _CarSettingsState extends State<CarSettings> {
         ),
         body: ListView(
           children: <Widget>[
-            SettingsList(
-              shrinkWrap: true,
-              sections: [
-                SettingsSection(
-                  title: Text('Add Car'),
-                  tiles: <SettingsTile>[
-                    SettingsTile.navigation(
-                      leading: Icon(Icons.add),
-                      title: Text('Add Car'),
-                      value:
-                          Text('Add a car that you own to your list of cars'),
-                      onPressed: (context) => {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => addCar()),
-                        ) //OPEN MENU HERE
-                      },
-                    ),
-                    SettingsTile.navigation(
-                      leading: Icon(Icons.add),
-                      title: Text('Delete Car'),
-                      value: Text('Delete a car from your list of cars'),
-                      onPressed: (context) => {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => DeleteCar()),
-                        ) //OPEN MENU HERE
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
             FutureBuilder(
                 future: _data,
                 builder: (context, snapshot) {
@@ -105,12 +102,13 @@ class _CarSettingsState extends State<CarSettings> {
                       shrinkWrap: true,
                       sections: [
                         SettingsSection(
-                          title: Text('Your Cars'),
+                          title: Text('SelectToDelete'),
                           tiles: <SettingsTile>[
                             for (Car car in snapshot.data!)
                               SettingsTile(
                                 title: Text(car.Brand + " " + car.Model),
                                 value: Text(car.Color),
+                                onPressed: (context) => {deleteCar(car)},
                               ),
                           ],
                         ),
