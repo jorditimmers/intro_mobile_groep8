@@ -253,6 +253,27 @@ class _AccountPageState extends State<AccountPage> {
     return user.docs.isNotEmpty;
   }
 
+  Widget buildLogOut() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 25),
+      width: double.infinity,
+      child: TextButton(
+        onPressed: () => {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => loginPage()))
+        },
+        child: (Text(
+          'LOG OUT',
+          style: (TextStyle(
+              color: Colors.grey,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'SF_Pro')),
+        )),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -303,6 +324,7 @@ class _AccountPageState extends State<AccountPage> {
                     SizedBox(height: 5),
                     buildSaveButton(),
                     buildDeleteAccountButton(),
+                    buildLogOut()
                   ],
                 ),
               ),
