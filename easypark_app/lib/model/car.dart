@@ -23,7 +23,7 @@ class Car {
 // Json to User
 Car _carFromJson(Map<String, dynamic> json) {
   return Car(json['Brand'] as String, json['Model'] as String,
-      json['Color'] as String, json['Plate'] as String);
+      json['Color'] as String, json['OwnerEmail'] as String);
 }
 
 // User to Json
