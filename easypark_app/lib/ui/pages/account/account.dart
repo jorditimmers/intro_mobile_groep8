@@ -259,6 +259,7 @@ class _AccountPageState extends State<AccountPage> {
       width: double.infinity,
       child: TextButton(
         onPressed: () => {
+          globalSessionData.userEmail = "",
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (context) => loginPage()))
         },
